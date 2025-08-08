@@ -1,8 +1,10 @@
 # hive-mail
 
-Introductory post: ++++++++
+Introductory post: https://peakd.com/hive-139531/@hassemer/hive-mail
 
-TL;DR: download everything, maintaining folder structure; then simply run "hive_mail.js" with Node.js. Follow console instructions. Enjoy.
+TL;DR: Download everything, maintaining folder structure; then simply run "hive_mail.js" with Node.js. Follow console instructions. Enjoy.
+
+Let me know if you find any bugs or have any suggestions for improvement (just write to me on Hive).
 
 Required Node.js packages:
 - @hiveio/dhive
