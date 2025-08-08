@@ -2,6 +2,8 @@
 
 Introductory post: ++++++++
 
+TL;DR: download everything, maintaining folder structure; then simply run "hive_mail.js" with Node.js. Follow console instructions. Enjoy.
+
 Required Node.js packages:
 - @hiveio/dhive
 - @noble/ciphers
