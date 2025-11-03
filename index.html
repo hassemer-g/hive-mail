@@ -1,1 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Hive-Mail</title>
+        <link rel="stylesheet" href="./css/styles.css">
+    </head>
 
+    <body>
+        <section id="menu-container">
+
+            <div id="main-menu" class="submenu visible">
+                <h1>Hive-Mail</h1>
+
+                <p class="subtitle">This tool allows you to encrypt and decrypt messages using post-quantum asymmetric encryption algorithms, with public keys saved in your Hive account's metadata</p>
+
+                <p class="disclaimer">The security offered by this tool is dependent on your ability to safely store your Hive-Mail Private Key! I recommend you make use of a robust password manager to keep your Key safe</p>
+
+                <br>
+
+                <button data-menu="genKeyPage" class="orange">Generate a Hive-Mail Key</button>
+                <button data-menu="encryptPage">Encrypt a Message</button>
+                <button data-menu="decryptPage">Decrypt a Message</button>
+                <button data-menu="removePage" class="red">Remove Hive-Mail Key from your account</button>
+
+                <p class="footer">Made with ❤️ by <a href="https://peakd.com/@hassemer" target="_blank">@hassemer</a></p>
+
+                <br><br>
+
+                <p class="disclaimer">Official release date: 03/11/2025</p>
+
+                <p class="disclaimer"><b>Disclaimer:</b> This tool is provided "as-is", absolutely without guarantees. <span class="highlight">Use it at your own risk.</span> Please be careful 🙏🏻</p>
+            </div>
+
+            <div id="genKeyPage-content" class="submenu">
+                <h1>Generate a Hive-Mail Key</h1>
+                <p class="subtitle">This page can be used to generate a new Hive-Mail key pair, which is used to encrypt and decrypt messages</p>
+
+                <label for="accountNameGen">Your Hive Account:</label>
+                <input type="text" id="accountNameGen" placeholder="E.g., your-account">
+
+                <button id="checkButtonGen" disabled>Check Account</button>
+
+                <p id="resultMessage1Gen" style="white-space: pre;"></p>
+
+                <button id="genButtonGen" disabled>Generate a New Hive-Mail Key Pair</button>
+
+                <div id="resultMsg2GenContainer" class="hidden">
+                    <p id="resultMessage2Gen" style="white-space: pre;"></p>
+                    <button id="copyButtonGen" class="orange">Copy the New Private Key</button>
+                </div>
+
+                <div id="confirmCheckboxContainer" class="hidden">
+                    <div class="checkbox-container">
+                        <input type="checkbox" id="confirmSavedKey">
+                        <label for="confirmSavedKey">I have saved the new Private Key</label>
+                        <br><br>
+                    </div>
+                </div>
+
+                <div id="keychainContainerGen" class="hidden">
+                    <div class="checkbox-container">
+                        <input type="checkbox" id="useHiveKeychainGen">
+                        <label for="useHiveKeychainGen">Use Hive Keychain to sign the transaction</label>
+                        <br><br>
+                    </div>
+                </div>
+
+                <div id="privActiveKeyContainerGen" class="hidden">
+                    <div class="form-group">
+                        <label for="privActiveKeyGen">Your Private Active Key:</label>
+                        <input type="password" id="privActiveKeyGen" placeholder="Private Active Key (5...)">
+                    </div>
+                </div>
+
+                <button id="broadcastButtonGen" disabled>Save Onchain the New Public Key</button>
+
+                <p id="resultMessage3Gen" style="white-space: pre;"></p>
+
+                <button data-action="return-main">Return to Main Menu</button>
+            </div>
+
+            <div id="encryptPage-content" class="submenu">
+                <h1>Encrypt a Message</h1>
+
+
+                <label for="addresseeEnc">Addressee Hive Account:</label>
+                <input type="text" id="addresseeEnc" placeholder="E.g., other-account">
+
+                <br><br>
+
+                <label for="plaintextEnc">Plaintext to Encrypt:</label>
+                <input type="text" id="plaintextEnc" placeholder="Paste here the message to encrypt...">
+
+                <button id="encryptButton" disabled>Encrypt Message</button>
+
+                <p id="resultMessageEnc" style="white-space: pre;"></p>
+
+                <button id="copyButtonEnc" disabled>Copy the Encrypted Message</button>
+
+                <button data-action="return-main">Return to Main Menu</button>
+            </div>
+
+            <div id="decryptPage-content" class="submenu">
+                <h1>Decrypt a Message</h1>
+
+
+                <label for="addresseeDec">Your Hive Account:</label>
+                <input type="text" id="addresseeDec" placeholder="E.g., your-account">
+
+                <br><br>
+
+                <label for="ciphertextDec">Ciphertext to Decrypt:</label>
+                <input type="text" id="ciphertextDec" placeholder="Paste here the ciphertext to decrypt...">
+
+                <br><br>
+
+                <label for="privKeyDec">Your Hive-Mail Private Key:</label>
+                <input type="password" id="privKeyDec" placeholder="Paste here your Hive-Mail private key...">
+
+                <button id="decryptButton" disabled>Decrypt Message</button>
+
+                <p id="resultMessageDec" style="white-space: pre;"></p>
+
+                <button id="copyButtonDec" disabled>Copy the Decrypted Message</button>
+
+                <button data-action="return-main">Return to Main Menu</button>
+            </div>
+
+            <div id="removePage-content" class="submenu">
+                <h1>Remove the Hive-Mail Key from your Hive account</h1>
+                <p class="subtitle">This page can be used to remove the Hive-Mail public key from your Hive account metadata</p>
+
+                <label for="accountNameRem">Your Hive Account:</label>
+                <input type="text" id="accountNameRem" placeholder="E.g., your-account">
+
+                <button id="checkButtonRem" disabled>Check Account</button>
+
+                <p id="resultMessage1Rem" style="white-space: pre;"></p>
+
+                <div id="keychainContainerRem" class="hidden">
+                    <div class="checkbox-container">
+                        <input type="checkbox" id="useHiveKeychainRem">
+                        <label for="useHiveKeychainRem">Use Hive Keychain to sign the transaction</label>
+                        <br><br>
+                    </div>
+                </div>
+
+                <div id="privActiveKeyContainerRem" class="hidden">
+                    <div class="form-group">
+                        <label for="privActiveKeyRem">Your Private Active Key:</label>
+                        <input type="password" id="privActiveKeyRem" placeholder="Private Active Key (5...)">
+                    </div>
+                </div>
+
+                <button id="removeButton" disabled>Remove Hive-Mail Key</button>
+
+                <p id="resultMessage2Rem" style="white-space: pre;"></p>
+
+                <button data-action="return-main">Return to Main Menu</button>
+            </div>
+
+        </section>
+
+        <script type="module" src="./src/main.js"></script>
+    </body>
+
+</html>
