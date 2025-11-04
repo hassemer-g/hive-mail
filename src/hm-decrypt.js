@@ -25,7 +25,7 @@ import { derivForMsg } from "./hm-deriv.js";
 
 export async function decryptMsg(
     recipientName,
-    recipientPrivKeys,
+    privKey,
     msgSalt,
     timestamp,
     payloadBytes,
@@ -49,97 +49,88 @@ export async function decryptMsg(
         const kyberEphemeral = payloadBytes.slice(32, 1600);
         const hqcEphemeral = payloadBytes.slice(1600, 16021);
         const ciphertext = payloadBytes.slice(16021);
+        
+        const privKeyBytes = decodeBase91(privKey);
 
-        for (const privKey of recipientPrivKeys) {
+        const privX25519Key = privKeyBytes.slice(0, 32);
+        const privKyberKey = privKeyBytes.slice(32, 3200);
+        const privHQCkey = privKeyBytes.slice(3200);
 
-            const privKeyBytes = decodeBase91(privKey);
+        let x25519SharedSecret = null;
+        try {
+            x25519SharedSecret = retrieveX25519SharedSecret(privX25519Key, x25519Ephemeral);
+        } catch (err) {
+            continue;
+        }
 
-            const privX25519Key = privKeyBytes.slice(0, 32);
-            const privKyberKey = privKeyBytes.slice(32, 3200);
-            const privHQCkey = privKeyBytes.slice(3200);
+        if (!(x25519SharedSecret instanceof Uint8Array)) {
+            continue;
+        }
 
-            let x25519SharedSecret = null;
-            try {
-                x25519SharedSecret = retrieveX25519SharedSecret(privX25519Key, x25519Ephemeral);
-            } catch (err) {
-                continue;
-            }
+        const pubX25519KeyBytes = getX25519PubKey(privX25519Key);
 
-            if (!(x25519SharedSecret instanceof Uint8Array)) {
-                continue;
-            }
+        let kyberSharedSecret = null;
+        try {
+            kyberSharedSecret = await retrievePQsharedSecret(privKyberKey, kyberEphemeral, "ml-kem-1024");
+        } catch (err) {
+            continue;
+        }
 
-            const pubX25519KeyBytes = getX25519PubKey(privX25519Key);
+        if (!(kyberSharedSecret instanceof Uint8Array)) {
+            continue;
+        }
 
-            let kyberSharedSecret = null;
-            try {
-                kyberSharedSecret = await retrievePQsharedSecret(privKyberKey, kyberEphemeral, "ml-kem-1024");
-            } catch (err) {
-                continue;
-            }
+        const pubKyberKeyBytes = extractPQpubKey(privKyberKey, "ml-kem-1024");
 
-            if (!(kyberSharedSecret instanceof Uint8Array)) {
-                continue;
-            }
+        let hqcSharedSecret = null;
+        try {
+            hqcSharedSecret = await retrievePQsharedSecret(privHQCkey, hqcEphemeral, "hqc-256");
+        } catch (err) {
+            continue;
+        }
 
-            const pubKyberKeyBytes = extractPQpubKey(privKyberKey, "ml-kem-1024");
+        if (!(hqcSharedSecret instanceof Uint8Array)) {
+            continue;
+        }
 
-            let hqcSharedSecret = null;
-            try {
-                hqcSharedSecret = await retrievePQsharedSecret(privHQCkey, hqcEphemeral, "hqc-256");
-            } catch (err) {
-                continue;
-            }
+        const pubHQCkeyBytes = extractPQpubKey(privHQCkey, "hqc-256");
 
-            if (!(hqcSharedSecret instanceof Uint8Array)) {
-                continue;
-            }
+        const msgIdCode = `ჰM0 ${recipientName} ${timestamp} ${msgSalt} ${pubX25519KeyBytes.length} ${x25519SharedSecret.length} ${pubKyberKeyBytes.length} ${kyberSharedSecret.length} ${pubHQCkeyBytes.length} ${hqcSharedSecret.length} 0 0 0 0 0 0 0 0 0 0`;
+        
+        const keypairs = derivForMsg(
+            msgIdCode,
+            pubX25519KeyBytes,
+            pubKyberKeyBytes,
+            pubHQCkeyBytes,
+            x25519SharedSecret,
+            kyberSharedSecret,
+            hqcSharedSecret,
+            Hs,
+        );
 
-            const pubHQCkeyBytes = extractPQpubKey(privHQCkey, "hqc-256");
+        const decrypted1 = decryptXSalsaPoly1305(
+            ciphertext,
+            keypairs[3],
+            keypairs[0],
+        );
 
-            const msgIdCode = `ჰM0 ${recipientName} ${timestamp} ${msgSalt} ${pubX25519KeyBytes.length} ${x25519SharedSecret.length} ${pubKyberKeyBytes.length} ${kyberSharedSecret.length} ${pubHQCkeyBytes.length} ${hqcSharedSecret.length} 0 0 0 0 0 0 0 0 0 0`;
-            
-            const keypairs = derivForMsg(
-                msgIdCode,
-                pubX25519KeyBytes,
-                pubKyberKeyBytes,
-                pubHQCkeyBytes,
-                x25519SharedSecret,
-                kyberSharedSecret,
-                hqcSharedSecret,
-                Hs,
-            );
+        const decrypted2 = decryptAesGcmSiv(
+            decrypted1,
+            keypairs[4],
+            keypairs[1],
+        );
 
-            try {
+        const decrypted3 = bytesToUtf8(decryptXChaCha20Poly1305(
+            decrypted2,
+            keypairs[5],
+            keypairs[2],
+        ));
 
-                const decrypted1 = decryptXSalsaPoly1305(
-                    ciphertext,
-                    keypairs[3],
-                    keypairs[0],
-                );
-
-                const decrypted2 = decryptAesGcmSiv(
-                    decrypted1,
-                    keypairs[4],
-                    keypairs[1],
-                );
-
-                const decrypted3 = bytesToUtf8(decryptXChaCha20Poly1305(
-                    decrypted2,
-                    keypairs[5],
-                    keypairs[2],
-                ));
-
-                if (
-                    typeof decrypted3 === "string"
-                    && decrypted3.trim()
-                ) {
-                    return decrypted3;
-                }
-
-            } catch (err) {
-
-            }
+        if (
+            typeof decrypted3 === "string"
+            && decrypted3.trim()
+        ) {
+            return decrypted3;
         }
 
         return null;
