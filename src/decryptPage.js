@@ -148,4 +148,4 @@ copyButtonDec.addEventListener("click", () => {
     });
 });
 
-valDecryptButton();
+
