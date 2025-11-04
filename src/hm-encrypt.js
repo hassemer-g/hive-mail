@@ -48,7 +48,7 @@ export async function encryptMsg(
 
     const timestamp = Date.now();
 
-    const msgIdCode = `ჰM0 ${recipientName} ${timestamp} ${msgSalt}`;
+    const msgIdCode = `ჰM0 ${recipientName} ${timestamp} ${msgSalt} ${recipientPubX25519Key.length} ${x25519SharedSecret.length} ${recipientPubKyberKey.length} ${kyberSharedSecret.length} ${recipientPubHQCkey.length} ${hqcSharedSecret.length} 0 0 0 0 0 0 0 0 0 0`;
 
     const keypairs = derivForMsg(
         msgIdCode,
