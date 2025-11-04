@@ -107,7 +107,7 @@ decryptButton.addEventListener("click", async () => {
         return;
     }
 
-    const ciphertext = ciphertextDecInput.value.trim().slice(2, -2);
+    const ciphertext = ciphertextDecInput.value.trim().slice(1, -1);
 
     const timestampStr = ciphertext.split("ჰM0")[1];
     if (!timestampStr) {
