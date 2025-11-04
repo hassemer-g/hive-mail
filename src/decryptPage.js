@@ -45,12 +45,12 @@ let DECRYPTED_MSG = null;
 
 function valCiphertext(input) {
     if (typeof input !== "string") return false;
-    return input.startsWith('["') && input.endsWith('"]') && (input.length - 4) > 19700;
+    return input.startsWith('"') && input.endsWith('"') && (input.length - 2) > 19700;
 }
 
 function valPriv(input) {
     if (typeof input !== "string") return false;
-    return input.startsWith('["') && input.endsWith('"]') && (input.length - 4) > 12900;
+    return input.startsWith('"') && input.endsWith('"') && (input.length - 2) > 12900;
 }
 
 function valDecryptButton() {
