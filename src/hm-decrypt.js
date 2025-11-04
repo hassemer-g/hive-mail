@@ -56,43 +56,22 @@ export async function decryptMsg(
         const privKyberKey = privKeyBytes.slice(32, 3200);
         const privHQCkey = privKeyBytes.slice(3200);
 
-        let x25519SharedSecret = null;
-        try {
-            x25519SharedSecret = retrieveX25519SharedSecret(privX25519Key, x25519Ephemeral);
-        } catch (err) {
-            continue;
-        }
-
+        const x25519SharedSecret = retrieveX25519SharedSecret(privX25519Key, x25519Ephemeral);
         if (!(x25519SharedSecret instanceof Uint8Array)) {
-            continue;
+            return null;
         }
-
         const pubX25519KeyBytes = getX25519PubKey(privX25519Key);
 
-        let kyberSharedSecret = null;
-        try {
-            kyberSharedSecret = await retrievePQsharedSecret(privKyberKey, kyberEphemeral, "ml-kem-1024");
-        } catch (err) {
-            continue;
-        }
-
+        const kyberSharedSecret = await retrievePQsharedSecret(privKyberKey, kyberEphemeral, "ml-kem-1024");
         if (!(kyberSharedSecret instanceof Uint8Array)) {
-            continue;
+            return null;
         }
-
         const pubKyberKeyBytes = extractPQpubKey(privKyberKey, "ml-kem-1024");
 
-        let hqcSharedSecret = null;
-        try {
-            hqcSharedSecret = await retrievePQsharedSecret(privHQCkey, hqcEphemeral, "hqc-256");
-        } catch (err) {
-            continue;
-        }
-
+        const hqcSharedSecret = await retrievePQsharedSecret(privHQCkey, hqcEphemeral, "hqc-256");
         if (!(hqcSharedSecret instanceof Uint8Array)) {
-            continue;
+            return null;
         }
-
         const pubHQCkeyBytes = extractPQpubKey(privHQCkey, "hqc-256");
 
         const msgIdCode = `ჰM0 ${recipientName} ${timestamp} ${msgSalt} ${pubX25519KeyBytes.length} ${x25519SharedSecret.length} ${pubKyberKeyBytes.length} ${kyberSharedSecret.length} ${pubHQCkeyBytes.length} ${hqcSharedSecret.length} 0 0 0 0 0 0 0 0 0 0`;
