@@ -86,9 +86,5 @@ export async function encryptMsg(
         ciphertext3,
     );
 
-    const msgArray = [
-        msgSalt + encodeBase91(payload) + "ჰM0" + encodeBase91(integerToBytes(timestamp)),
-    ];
-
-    return { msgArray, timestamp };
+    return msgSalt + encodeBase91(payload) + "ჰM0" + encodeBase91(integerToBytes(timestamp));
 }
