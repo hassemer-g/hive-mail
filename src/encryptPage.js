@@ -92,7 +92,7 @@ encryptButton.addEventListener("click", async () => {
 
     if (recipientPubHMkey && recipientPubHMkey instanceof Uint8Array) {
 
-        const { msgArray } = await encryptMsg(
+        const msgStr = await encryptMsg(
             plaintextInput.value.trim(),
             addresseeInput.value.trim(),
             recipientPubHMkey,
@@ -100,16 +100,14 @@ encryptButton.addEventListener("click", async () => {
         );
 
         if (
-            Array.isArray(msgArray)
-            && !(msgArray.length < 1)
-            && msgArray.every(v => typeof v === "string" && v.trim())
+            typeof msgStr === "string" && msgStr.trim()
         ) {
 
         resultMessage.textContent = `Message successfully encrypted!`;
         resultMessage.style.color = "green";
         copyButtonEnc.disabled = false;
         copyButtonEnc.style.backgroundColor = "darkorange";
-        ENCRYPTED_MSG = JSON.stringify(msgArray, null, 0);
+        ENCRYPTED_MSG = `"${msgStr}"`;
 
         } else {
             resultMessage.textContent = `Failed to encrypt message!`;
