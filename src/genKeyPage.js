@@ -130,7 +130,7 @@ ${encodeBase91(privHMkey).slice(0, 8)}...`;
     keychainContainer.classList.remove("visible");
     privActiveKeyContainer.classList.remove("visible");
 
-    PRIVKEYTOCOPY = `["${encodeBase91(privHMkey)}"]`;
+    PRIVKEYTOCOPY = `"${encodeBase91(privHMkey)}"`;
     PUBKEYTOBROADCAST = pubHMkey;
     resultMsg2Cont.classList.add("visible");
     copyButtonGen.disabled = false;
