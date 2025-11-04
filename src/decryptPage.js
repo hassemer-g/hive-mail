@@ -92,21 +92,7 @@ privKeyDecInput.addEventListener("input", valDecryptButton);
 
 decryptButton.addEventListener("click", async () => {
 
-    let privKeyArr = null;
-    try {
-        privKeyArr = JSON.parse(privKeyDecInput.value.trim());
-    } catch (err) {
-        privKeyArr = null;
-        resultMessageDec.textContent = `Invalid Hive-Mail private key input!`;
-        resultMessageDec.style.color = "red";
-        return;
-    }
-    if (!privKeyArr || !Array.isArray(privKeyArr)) {
-        resultMessageDec.textContent = `Invalid Hive-Mail private key input!`;
-        resultMessageDec.style.color = "red";
-        return;
-    }
-
+    const privKeyArr = [privKeyDecInput.value.trim().slice(1, -1)];
     const ciphertext = ciphertextDecInput.value.trim().slice(1, -1);
 
     const timestampStr = ciphertext.split("ჰM0")[1];
