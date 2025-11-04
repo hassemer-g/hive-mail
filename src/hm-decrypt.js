@@ -50,8 +50,6 @@ export async function decryptMsg(
         const hqcEphemeral = payloadBytes.slice(1600, 16021);
         const ciphertext = payloadBytes.slice(16021);
 
-        const msgIdCode = `ჰM0 ${recipientName} ${timestamp} ${msgSalt}`;
-
         for (const privKey of recipientPrivKeys) {
 
             const privKeyBytes = decodeBase91(privKey);
@@ -99,6 +97,8 @@ export async function decryptMsg(
 
             const pubHQCkeyBytes = extractPQpubKey(privHQCkey, "hqc-256");
 
+            const msgIdCode = `ჰM0 ${recipientName} ${timestamp} ${msgSalt} ${pubX25519KeyBytes.length} ${x25519SharedSecret.length} ${pubKyberKeyBytes.length} ${kyberSharedSecret.length} ${pubHQCkeyBytes.length} ${hqcSharedSecret.length} 0 0 0 0 0 0 0 0 0 0`;
+            
             const keypairs = derivForMsg(
                 msgIdCode,
                 pubX25519KeyBytes,
