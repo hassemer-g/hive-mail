@@ -92,7 +92,6 @@ privKeyDecInput.addEventListener("input", valDecryptButton);
 
 decryptButton.addEventListener("click", async () => {
 
-    const privKeyStr = privKeyDecInput.value.trim().slice(1, -1);
     const ciphertext = ciphertextDecInput.value.trim().slice(1, -1);
 
     const timestampStr = ciphertext.split("ჰM0")[1];
@@ -117,7 +116,7 @@ decryptButton.addEventListener("click", async () => {
 
     const decrypted = await decryptMsg(
         addresseeDecInput.value.trim(),
-        privKeyStr,
+        privKeyDecInput.value.trim().slice(1, -1),
         saltAndPayload.slice(0, 8),
         timestamp,
         decodeBase91(payloadStr),
