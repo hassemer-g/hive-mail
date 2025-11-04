@@ -32,7 +32,7 @@ export function derivForMsg(
             concatBytes(x25519SharedSecret, kyberSharedSecret, hqcSharedSecret, salt),
             Hs,
             16320,
-            3,
+            10,
         ),
         salt,
         [24, 12, 24, 32, 32, 32],
