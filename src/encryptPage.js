@@ -127,4 +127,3 @@ copyButtonEnc.addEventListener("click", () => {
     });
 });
 
-valEncryptButton();
