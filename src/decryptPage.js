@@ -112,8 +112,6 @@ decryptButton.addEventListener("click", async () => {
         return;
     }
 
-    const timestamp = bytesToInteger(decodeBase91(timestampStr));
-
     const decrypted = await decryptMsg(
         addresseeDecInput.value.trim(),
         decodeBase91(privKeyDecInput.value.trim().slice(1, -1)),
