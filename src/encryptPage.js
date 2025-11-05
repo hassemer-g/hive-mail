@@ -42,6 +42,7 @@ const Hs = {
 
 const addresseeInput = document.getElementById("addresseeEnc");
 const plaintextInput = document.getElementById("plaintextEnc");
+const usePQ = document.getElementById("usePQ");
 const encryptButton = document.getElementById("encryptButton");
 const copyButtonEnc = document.getElementById("copyButtonEnc");
 
@@ -52,7 +53,7 @@ function valEncryptButton() {
     if (
         valAccountNameStructure(addresseeInput.value.trim())
         && typeof plaintextInput.value.trim() === "string"
-        && plaintextInput.value.trim().length > 0
+        && plaintextInput.value.trim().length
         && testedRPCs.length
     ) {
         encryptButton.disabled = false;
@@ -79,6 +80,13 @@ plaintextInput.addEventListener("input", () => {
 });
 plaintextInput.addEventListener("input", valEncryptButton);
 
+usePQ.addEventListener("change", () => {
+        copyButtonEnc.disabled = true;
+        copyButtonEnc.style.backgroundColor = "";
+        resultMessage.textContent = "";
+        ENCRYPTED_MSG = null;
+});
+
 encryptButton.addEventListener("click", async () => {
 
     let recipientPubHMkey = null;
@@ -100,7 +108,7 @@ encryptButton.addEventListener("click", async () => {
             addresseeInput.value.trim(),
             recipientPubHMkey,
             Hs,
-            doNotUsePq,
+            usePQ.checked ? false : true,
         );
 
         if (
@@ -130,4 +138,3 @@ copyButtonEnc.addEventListener("click", () => {
         setTimeout(() => copyButtonEnc.textContent = "Copy the Encrypted Message", 5000);
     });
 });
-
