@@ -1,9 +1,7 @@
 import {
+    utf8ToBytes,
     bytesToUtf8,
 } from "./utils.js";
-import {
-    decodeBase91,
-} from "./base91.js";
 import {
     decryptXChaCha20Poly1305,
 } from "./xchacha20-poly1305.js";
@@ -25,19 +23,19 @@ import { derivForMsg } from "./hm-deriv.js";
 
 export async function decryptMsg(
     recipientName,
-    privKey,
+    privKeyBytes,
     msgSalt,
     timestamp,
     payloadBytes,
     Hs,
+    doNotUsePq = false;
 ) {
 
     if (
-        arguments.length !== 6
-        || [recipientName, msgSalt].some(v => typeof v !== "string" || !v.trim())
+        [recipientName, msgSalt].some(v => typeof v !== "string" || !v.trim())
         || !Number.isSafeInteger(timestamp)
         || !(payloadBytes instanceof Uint8Array)
-        || payloadBytes.length < 16022
+        || (!doNotUsePq && payloadBytes.length < 16022)
     ) {
         console.error(`Incorrect inputs to the "decryptMsg" function.`);
         return null;
@@ -46,11 +44,16 @@ export async function decryptMsg(
     try {
 
         const x25519Ephemeral = payloadBytes.slice(0, 32);
-        const kyberEphemeral = payloadBytes.slice(32, 1600);
-        const hqcEphemeral = payloadBytes.slice(1600, 16021);
-        const ciphertext = payloadBytes.slice(16021);
-        
-        const privKeyBytes = decodeBase91(privKey);
+
+        let kyberEphemeral = new Uint8Array(0), hqcEphemeral = new Uint8Array(0);
+        let ciphertext;
+        if (doNotUsePq) {
+            ciphertext = payloadBytes.slice(32);
+        } else {
+            kyberEphemeral = payloadBytes.slice(32, 1600);
+            hqcEphemeral = payloadBytes.slice(1600, 16021);
+            ciphertext = payloadBytes.slice(16021);
+        }
 
         const privX25519Key = privKeyBytes.slice(0, 32);
         const privKyberKey = privKeyBytes.slice(32, 3200);
@@ -60,22 +63,27 @@ export async function decryptMsg(
         if (!(x25519SharedSecret instanceof Uint8Array)) {
             return null;
         }
+
+        let kyberSharedSecret = new Uint8Array(0), hqcSharedSecret = new Uint8Array(0);
+        if (!doNotUsePq) {
+
+            kyberSharedSecret = await retrievePQsharedSecret(privKyberKey, kyberEphemeral, "ml-kem-1024");
+            if (!(kyberSharedSecret instanceof Uint8Array)) {
+                return null;
+            }
+
+            hqcSharedSecret = await retrievePQsharedSecret(privHQCkey, hqcEphemeral, "hqc-256");
+            if (!(hqcSharedSecret instanceof Uint8Array)) {
+                return null;
+            }
+        }
+
         const pubX25519KeyBytes = getX25519PubKey(privX25519Key);
-
-        const kyberSharedSecret = await retrievePQsharedSecret(privKyberKey, kyberEphemeral, "ml-kem-1024");
-        if (!(kyberSharedSecret instanceof Uint8Array)) {
-            return null;
-        }
         const pubKyberKeyBytes = extractPQpubKey(privKyberKey, "ml-kem-1024");
-
-        const hqcSharedSecret = await retrievePQsharedSecret(privHQCkey, hqcEphemeral, "hqc-256");
-        if (!(hqcSharedSecret instanceof Uint8Array)) {
-            return null;
-        }
         const pubHQCkeyBytes = extractPQpubKey(privHQCkey, "hqc-256");
 
-        const msgIdCode = `ჰM0 ${recipientName} ${timestamp} ${msgSalt} ${pubX25519KeyBytes.length} ${x25519SharedSecret.length} ${pubKyberKeyBytes.length} ${kyberSharedSecret.length} ${pubHQCkeyBytes.length} ${hqcSharedSecret.length} 0 0 0 0 0 0 0 0 0 0`;
-        
+        const msgIdCode = utf8ToBytes(`ჰM0 ${recipientName} ${timestamp} ${msgSalt} ${pubX25519KeyBytes.length} ${x25519SharedSecret.length} ${x25519Ephemeral.length} ${pubKyberKeyBytes.length} ${kyberSharedSecret.length} ${kyberEphemeral.length} ${pubHQCkeyBytes.length} ${hqcSharedSecret.length} ${hqcEphemeral.length} 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0`);
+
         const keypairs = derivForMsg(
             msgIdCode,
             pubX25519KeyBytes,
@@ -87,29 +95,43 @@ export async function decryptMsg(
             Hs,
         );
 
-        const decrypted1 = decryptXSalsaPoly1305(
-            ciphertext,
-            keypairs[3],
-            keypairs[0],
-        );
+        let finalDecrypted;
+        if (doNotUsePq) {
 
-        const decrypted2 = decryptAesGcmSiv(
-            decrypted1,
-            keypairs[4],
-            keypairs[1],
-        );
+            finalDecrypted = decryptXChaCha20Poly1305(
+                ciphertext,
+                keypairs[5],
+                keypairs[2],
+            );
 
-        const decrypted3 = bytesToUtf8(decryptXChaCha20Poly1305(
-            decrypted2,
-            keypairs[5],
-            keypairs[2],
-        ));
+        } else {
+
+            const decrypted1 = decryptXSalsaPoly1305(
+                ciphertext,
+                keypairs[3],
+                keypairs[0],
+            );
+
+            const decrypted2 = decryptAesGcmSiv(
+                decrypted1,
+                keypairs[4],
+                keypairs[1],
+            );
+
+            finalDecrypted = decryptXChaCha20Poly1305(
+                decrypted2,
+                keypairs[5],
+                keypairs[2],
+            );
+        }
+
+        const decryptedStr = bytesToUtf8(finalDecrypted);
 
         if (
-            typeof decrypted3 === "string"
-            && decrypted3.trim()
+            typeof decryptedStr === "string"
+            && decryptedStr.trim()
         ) {
-            return decrypted3;
+            return decryptedStr;
         }
 
         return null;
