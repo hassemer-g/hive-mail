@@ -28,7 +28,7 @@ export async function decryptMsg(
     timestamp,
     payloadBytes,
     Hs,
-    doNotUsePq = false;
+    doNotUsePq = false,
 ) {
 
     if (
