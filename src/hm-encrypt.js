@@ -6,10 +6,6 @@ import {
     encodeBase91,
 } from "./base91.js";
 import {
-    customBase91CharSet,
-} from "./charsets.js";
-import { generateUniformlyRandomString } from "./generate_random_string.js";
-import {
     encryptXChaCha20Poly1305,
 } from "./xchacha20-poly1305.js";
 import {
@@ -21,9 +17,6 @@ import {
 import {
     buildPQsharedSecret,
 } from "./pq.js";
-import {
-    integerToBytes,
-} from "./numbers.js";
 import { buildX25519SharedSecret } from "./x25519.js";
 import { derivForMsg } from "./hm-deriv.js";
 
@@ -47,21 +40,20 @@ export async function encryptMsg(
         ({ sharedSecret: hqcSharedSecret, encryptedSharedSecret: hqcEphemeral } = await buildPQsharedSecret(recipientPubHQCkey, "hqc-256"));
     }
 
-    const msgSalt = generateUniformlyRandomString(doNotUsePq ? 1 : 8, customBase91CharSet);
-
-    const timestamp = Date.now();
-
-    const msgIdCode = utf8ToBytes(`ჰM0 ${recipientName} ${timestamp} ${msgSalt} ${recipientPubX25519Key.length} ${x25519SharedSecret.length} ${x25519Ephemeral.length} ${recipientPubKyberKey.length} ${kyberSharedSecret.length} ${kyberEphemeral.length} ${recipientPubHQCkey.length} ${hqcSharedSecret.length} ${hqcEphemeral.length} 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0`);
+    const msgInfo = utf8ToBytes(`ჰM0 ${recipientName} ${""} ${""} ${""} ${""} ${""} ${recipientPubX25519Key.length} ${x25519Ephemeral.length} ${x25519SharedSecret.length} ${recipientPubKyberKey.length} ${kyberEphemeral.length} ${kyberSharedSecret.length} ${recipientPubHQCkey.length} ${hqcEphemeral.length} ${hqcSharedSecret.length} 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0`);
 
     const keypairs = derivForMsg(
-        msgIdCode,
-        recipientPubX25519Key,
-        recipientPubKyberKey,
-        recipientPubHQCkey,
-        x25519SharedSecret,
-        kyberSharedSecret,
-        hqcSharedSecret,
+        msgInfo,
         Hs,
+        recipientPubX25519Key,
+        x25519Ephemeral,
+        x25519SharedSecret,
+        recipientPubKyberKey,
+        kyberEphemeral,
+        kyberSharedSecret,
+        recipientPubHQCkey,
+        hqcEphemeral,
+        hqcSharedSecret,
     );
 
     const ciphertext1 = encryptXChaCha20Poly1305(
@@ -96,5 +88,5 @@ export async function encryptMsg(
         finalCiphertext,
     );
 
-    return msgSalt + encodeBase91(payload) + `${doNotUsePq ? "ჰ0m" : "ჰ0M"}` + encodeBase91(integerToBytes(timestamp));
+    return `${doNotUsePq ? "0m" : "0M"}` + encodeBase91(payload);
 }
