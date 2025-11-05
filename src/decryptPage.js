@@ -92,7 +92,12 @@ privKeyDecInput.addEventListener("input", valDecryptButton);
 
 decryptButton.addEventListener("click", async () => {
 
-    const ciphertext = ciphertextDecInput.value.trim().slice(1, -1);
+    let ciphertext = ciphertextDecInput.value.trim().slice(1, -1);
+    let doNotUsePq = false;
+    if (ciphertext.startsWith('"')) {
+        ciphertext = ciphertext.slice(1);
+        doNotUsePq = true;
+    }
 
     const timestampStr = ciphertext.split("ჰ0M")[1];
     if (!timestampStr) {
@@ -121,6 +126,7 @@ decryptButton.addEventListener("click", async () => {
         timestamp,
         decodeBase91(payloadStr),
         Hs,
+        doNotUsePq,
     );
 
     if (
