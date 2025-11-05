@@ -100,6 +100,7 @@ encryptButton.addEventListener("click", async () => {
             addresseeInput.value.trim(),
             recipientPubHMkey,
             Hs,
+            doNotUsePq,
         );
 
         if (
