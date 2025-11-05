@@ -89,21 +89,29 @@ privKeyDecInput.addEventListener("input", valDecryptButton);
 
 decryptButton.addEventListener("click", async () => {
 
-    let ciphertext = ciphertextDecInput.value.trim().slice(1, -1);
+    const cleanedMsgStr = ciphertextDecInput.value.trim().slice(1, -1);
+
+    let delimiter;
     let doNotUsePq = false;
-    if (ciphertext.startsWith('"')) {
-        ciphertext = ciphertext.slice(1);
+    if (cleanedMsgStr.includes("ჰ0M")) {
+        delimiter = "ჰ0M";
+    } else if (cleanedMsgStr.includes("ჰ0m")) {
+        delimiter = "ჰ0m";
         doNotUsePq = true;
+    } else {
+        resultMessageDec.textContent = `Invalid ciphertext input!`;
+        resultMessageDec.style.color = "red";
+        return;
     }
 
-    const timestampStr = ciphertext.split("ჰ0M")[1];
+    const timestampStr = cleanedMsgStr.split("ჰ0M")[1];
     if (!timestampStr) {
         resultMessageDec.textContent = `Invalid ciphertext input! Failed to retrieve the timestamp.`;
         resultMessageDec.style.color = "red";
         return;
     }
 
-    const saltAndPayload = ciphertext.split("ჰ0M")[0];
+    const saltAndPayload = cleanedMsgStr.split("ჰ0M")[0];
     const payloadStr = saltAndPayload.slice(doNotUsePq ? 1 : 8);
 
     if (
