@@ -96,5 +96,5 @@ export async function encryptMsg(
         finalCiphertext,
     );
 
-    return `${doNotUsePq ? '"' : ""}` + msgSalt + encodeBase91(payload) + "ჰ0M" + encodeBase91(integerToBytes(timestamp));
+    return msgSalt + encodeBase91(payload) + `${doNotUsePq ? "ჰ0m" : "ჰ0M"}` + encodeBase91(integerToBytes(timestamp));
 }
