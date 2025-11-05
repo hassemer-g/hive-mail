@@ -32,6 +32,7 @@ export async function encryptMsg(
     recipientName,
     recipientPubHMkey,
     Hs,
+    doNotUsePq = false;
 ) {
 
     const recipientPubX25519Key = recipientPubHMkey.slice(0, 32);
@@ -40,15 +41,17 @@ export async function encryptMsg(
 
     const { sharedSecret: x25519SharedSecret, encryptedSharedSecret: x25519Ephemeral } = buildX25519SharedSecret(recipientPubX25519Key);
 
-    const { sharedSecret: kyberSharedSecret, encryptedSharedSecret: kyberEphemeral } = await buildPQsharedSecret(recipientPubKyberKey, "ml-kem-1024");
+    let kyberSharedSecret = new Uint8Array(0), kyberEphemeral = new Uint8Array(0), hqcSharedSecret = new Uint8Array(0), hqcEphemeral = new Uint8Array(0);
+    if (!doNotUsePq) {
+        ({ sharedSecret: kyberSharedSecret, encryptedSharedSecret: kyberEphemeral } = await buildPQsharedSecret(recipientPubKyberKey, "ml-kem-1024"));
+        ({ sharedSecret: hqcSharedSecret, encryptedSharedSecret: hqcEphemeral } = await buildPQsharedSecret(recipientPubHQCkey, "hqc-256"));
+    }
 
-    const { sharedSecret: hqcSharedSecret, encryptedSharedSecret: hqcEphemeral } = await buildPQsharedSecret(recipientPubHQCkey, "hqc-256");
-
-    const msgSalt = generateUniformlyRandomString(8, customBase91CharSet + "`");
+    const msgSalt = generateUniformlyRandomString(8, customBase91CharSet);
 
     const timestamp = Date.now();
 
-    const msgIdCode = `ჰM0 ${recipientName} ${timestamp} ${msgSalt} ${recipientPubX25519Key.length} ${x25519SharedSecret.length} ${recipientPubKyberKey.length} ${kyberSharedSecret.length} ${recipientPubHQCkey.length} ${hqcSharedSecret.length} 0 0 0 0 0 0 0 0 0 0`;
+    const msgIdCode = utf8ToBytes(`ჰM0 ${recipientName} ${timestamp} ${msgSalt} ${recipientPubX25519Key.length} ${x25519SharedSecret.length} ${x25519Ephemeral.length} ${recipientPubKyberKey.length} ${kyberSharedSecret.length} ${kyberEphemeral.length} ${recipientPubHQCkey.length} ${hqcSharedSecret.length} ${hqcEphemeral.length} 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0`);
 
     const keypairs = derivForMsg(
         msgIdCode,
@@ -62,29 +65,36 @@ export async function encryptMsg(
     );
 
     const ciphertext1 = encryptXChaCha20Poly1305(
-        utf8ToBytes(plaintext),
+        plaintext,
         keypairs[5],
         keypairs[2],
     );
 
-    const ciphertext2 = encryptAesGcmSiv(
-        ciphertext1,
-        keypairs[4],
-        keypairs[1],
-    );
+    let finalCiphertext;
+    if (doNotUsePq) {
+        finalCiphertext = ciphertext1;
 
-    const ciphertext3 = encryptXSalsaPoly1305(
-        ciphertext2,
-        keypairs[3],
-        keypairs[0],
-    );
+    } else {
+
+        const ciphertext2 = encryptAesGcmSiv(
+            ciphertext1,
+            keypairs[4],
+            keypairs[1],
+        );
+
+        finalCiphertext = encryptXSalsaPoly1305(
+            ciphertext2,
+            keypairs[3],
+            keypairs[0],
+        );
+    }
 
     const payload = concatBytes(
         x25519Ephemeral,
         kyberEphemeral,
         hqcEphemeral,
-        ciphertext3,
+        finalCiphertext,
     );
 
-    return msgSalt + encodeBase91(payload) + "ჰM0" + encodeBase91(integerToBytes(timestamp));
+    return `${doNotUsePq ? '"' : ""}` + msgSalt + encodeBase91(payload) + "ჰ0M" + encodeBase91(integerToBytes(timestamp));
 }
