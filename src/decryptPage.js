@@ -94,14 +94,14 @@ decryptButton.addEventListener("click", async () => {
 
     const ciphertext = ciphertextDecInput.value.trim().slice(1, -1);
 
-    const timestampStr = ciphertext.split("ჰM0")[1];
+    const timestampStr = ciphertext.split("ჰ0M")[1];
     if (!timestampStr) {
         resultMessageDec.textContent = `Invalid ciphertext input! Failed to retrieve the timestamp.`;
         resultMessageDec.style.color = "red";
         return;
     }
 
-    const saltAndPayload = ciphertext.split("ჰM0")[0];
+    const saltAndPayload = ciphertext.split("ჰ0M")[0];
     const payloadStr = saltAndPayload.slice(8);
 
     if (
