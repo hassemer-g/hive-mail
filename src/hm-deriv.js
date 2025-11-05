@@ -5,9 +5,6 @@ import {
     doHashing,
     derivMult,
 } from "./deriv.js";
-import {
-    valPubPQkey,
-} from "./pq.js";
 
 export function derivForMsg(
     msgIdCode,
