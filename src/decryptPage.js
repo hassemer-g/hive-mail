@@ -147,6 +147,8 @@ decryptButton.addEventListener("click", async () => {
         resultMessageDec.style.color = "red";
     }
 
+    privKeyDecInput.value = "";
+    privKeyDecInput.style.borderColor = "";
 });
 
 copyButtonDec.addEventListener("click", () => {
