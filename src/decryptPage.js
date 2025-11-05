@@ -63,8 +63,6 @@ function valDecryptButton() {
         decryptButton.disabled = false;
         decryptButton.style.backgroundColor = "green";
     } else {
-        privKeyDecInput.value = "";
-        privKeyDecInput.style.borderColor = "";
         decryptButton.disabled = true;
         decryptButton.style.backgroundColor = "";
         resultMessageDec.textContent = "";
