@@ -47,7 +47,7 @@ export async function encryptMsg(
         ({ sharedSecret: hqcSharedSecret, encryptedSharedSecret: hqcEphemeral } = await buildPQsharedSecret(recipientPubHQCkey, "hqc-256"));
     }
 
-    const msgSalt = generateUniformlyRandomString(8, customBase91CharSet);
+    const msgSalt = generateUniformlyRandomString(doNotUsePq ? 1 : 8, customBase91CharSet);
 
     const timestamp = Date.now();
 
