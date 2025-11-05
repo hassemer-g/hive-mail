@@ -32,7 +32,7 @@ export async function encryptMsg(
     recipientName,
     recipientPubHMkey,
     Hs,
-    doNotUsePq = false;
+    doNotUsePq = false,
 ) {
 
     const recipientPubX25519Key = recipientPubHMkey.slice(0, 32);
