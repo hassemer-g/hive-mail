@@ -23,17 +23,15 @@ import { derivForMsg } from "./hm-deriv.js";
 
 export async function decryptMsg(
     recipientName,
-    privKeyBytes,
-    msgSalt,
-    timestamp,
+    recipientPrivKeys,
     payloadBytes,
     Hs,
     doNotUsePq = false,
 ) {
 
     if (
-        [recipientName, msgSalt].some(v => typeof v !== "string" || !v.trim())
-        || !Number.isSafeInteger(timestamp)
+        typeof recipientName !== "string"
+        || !recipientName.trim()
         || !(payloadBytes instanceof Uint8Array)
         || (!doNotUsePq && payloadBytes.length < 16022)
     ) {
@@ -82,17 +80,20 @@ export async function decryptMsg(
         const pubKyberKeyBytes = extractPQpubKey(privKyberKey, "ml-kem-1024");
         const pubHQCkeyBytes = extractPQpubKey(privHQCkey, "hqc-256");
 
-        const msgIdCode = utf8ToBytes(`ჰM0 ${recipientName} ${timestamp} ${msgSalt} ${pubX25519KeyBytes.length} ${x25519SharedSecret.length} ${x25519Ephemeral.length} ${pubKyberKeyBytes.length} ${kyberSharedSecret.length} ${kyberEphemeral.length} ${pubHQCkeyBytes.length} ${hqcSharedSecret.length} ${hqcEphemeral.length} 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0`);
+        const msgInfo = utf8ToBytes(`ჰM0 ${recipientName} ${""} ${""} ${""} ${""} ${""} ${pubX25519KeyBytes.length} ${x25519Ephemeral.length} ${x25519SharedSecret.length} ${pubKyberKeyBytes.length} ${kyberEphemeral.length} ${kyberSharedSecret.length} ${pubHQCkeyBytes.length} ${hqcEphemeral.length} ${hqcSharedSecret.length} 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0`);
 
         const keypairs = derivForMsg(
-            msgIdCode,
-            pubX25519KeyBytes,
-            pubKyberKeyBytes,
-            pubHQCkeyBytes,
-            x25519SharedSecret,
-            kyberSharedSecret,
-            hqcSharedSecret,
+            msgInfo,
             Hs,
+            pubX25519KeyBytes,
+            x25519Ephemeral,
+            x25519SharedSecret,
+            pubKyberKeyBytes,
+            kyberEphemeral,
+            kyberSharedSecret,
+            pubHQCkeyBytes,
+            hqcEphemeral,
+            hqcSharedSecret,
         );
 
         let finalDecrypted;
