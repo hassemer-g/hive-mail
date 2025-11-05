@@ -65,10 +65,11 @@ function valDecryptButton() {
     } else {
         decryptButton.disabled = true;
         decryptButton.style.backgroundColor = "";
-        copyButtonDec.disabled = true;
-        copyButtonDec.style.backgroundColor = "";
         resultMessageDec.textContent = "";
-        DECRYPTED_MSG = null;
+        if (!DECRYPTED_MSG) {
+            copyButtonDec.disabled = true;
+            copyButtonDec.style.backgroundColor = "";
+        }
     }
 }
 
