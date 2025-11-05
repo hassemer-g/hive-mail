@@ -7,18 +7,21 @@ import {
 } from "./deriv.js";
 
 export function derivForMsg(
-    msgIdCode,
-    recipientPubX25519Key,
-    recipientPubKyberKey,
-    recipientPubHQCkey,
-    x25519SharedSecret,
-    kyberSharedSecret,
-    hqcSharedSecret,
+    msgInfo,
     Hs,
+    recipientPubX25519Key,
+    x25519Ephemeral,
+    x25519SharedSecret,
+    recipientPubKyberKey,
+    kyberEphemeral,
+    kyberSharedSecret,
+    recipientPubHQCkey,
+    hqcEphemeral,
+    hqcSharedSecret,
 ) {
 
     const salt = doHashing(
-        concatBytes(msgIdCode, recipientPubX25519Key, recipientPubKyberKey, recipientPubHQCkey),
+        concatBytes(msgInfo, recipientPubX25519Key, x25519Ephemeral, recipientPubKyberKey, kyberEphemeral, recipientPubHQCkey, hqcEphemeral),
         Hs,
         128,
     );
