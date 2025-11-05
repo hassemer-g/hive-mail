@@ -50,7 +50,7 @@ function valCiphertext(input) {
 
 function valPriv(input) {
     if (typeof input !== "string") return false;
-    return input.startsWith('"') && input.endsWith('"') && (input.length - 2) > 12900;
+    return input.startsWith('"') && input.endsWith('"') && input.length > 12900;
 }
 
 function valDecryptButton() {
