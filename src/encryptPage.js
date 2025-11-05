@@ -6,6 +6,9 @@ import {
     createWhirlpool,
     createXXHash128,
 } from "./hash-wasm/hash-wasm.mjs";
+import {
+    utf8ToBytes,
+} from "./utils.js";
 import { RPCsArray } from "./rpcs.js";
 import { testRPCsWithDhive } from "./test_rpcs.js";
 import {
@@ -93,7 +96,7 @@ encryptButton.addEventListener("click", async () => {
     if (recipientPubHMkey && recipientPubHMkey instanceof Uint8Array) {
 
         const msgStr = await encryptMsg(
-            plaintextInput.value.trim(),
+            utf8ToBytes(plaintextInput.value.trim()),
             addresseeInput.value.trim(),
             recipientPubHMkey,
             Hs,
