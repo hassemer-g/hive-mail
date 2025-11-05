@@ -23,7 +23,7 @@ import { derivForMsg } from "./hm-deriv.js";
 
 export async function decryptMsg(
     recipientName,
-    recipientPrivKeys,
+    privKeyBytes,
     payloadBytes,
     Hs,
     doNotUsePq = false,
