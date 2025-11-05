@@ -93,9 +93,9 @@ decryptButton.addEventListener("click", async () => {
 
     let delimiter;
     let doNotUsePq = false;
-    if (cleanedMsgStr.includes("ჰ0M")) {
+    if (cleanedMsgStr.includes("ჰ0M") && !cleanedMsgStr.includes("ჰ0m")) {
         delimiter = "ჰ0M";
-    } else if (cleanedMsgStr.includes("ჰ0m")) {
+    } else if (cleanedMsgStr.includes("ჰ0m") && !cleanedMsgStr.includes("ჰ0M")) {
         delimiter = "ჰ0m";
         doNotUsePq = true;
     } else {
