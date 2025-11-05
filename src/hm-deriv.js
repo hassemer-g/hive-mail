@@ -1,6 +1,5 @@
 import {
     concatBytes,
-    utf8ToBytes,
 } from "./utils.js";
 import {
     doHashing,
@@ -22,7 +21,7 @@ export function derivForMsg(
 ) {
 
     const salt = doHashing(
-        concatBytes(utf8ToBytes(msgIdCode), recipientPubX25519Key, recipientPubKyberKey, recipientPubHQCkey),
+        concatBytes(msgIdCode, recipientPubX25519Key, recipientPubKyberKey, recipientPubHQCkey),
         Hs,
         128,
     );
