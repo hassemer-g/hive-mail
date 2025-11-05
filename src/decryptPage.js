@@ -45,7 +45,7 @@ let DECRYPTED_MSG = null;
 
 function valCiphertext(input) {
     if (typeof input !== "string") return false;
-    return input.startsWith('"') && input.endsWith('"') && (input.length - 2) > 19700;
+    return input.startsWith('"') && input.endsWith('"') && (input.length - 2) > 70;
 }
 
 function valPriv(input) {
