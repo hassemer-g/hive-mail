@@ -143,6 +143,8 @@ decryptButton.addEventListener("click", async () => {
 
     privKeyDecInput.value = "";
     privKeyDecInput.style.borderColor = "";
+    decryptButton.disabled = true;
+    decryptButton.style.backgroundColor = "";
 });
 
 copyButtonDec.addEventListener("click", () => {
