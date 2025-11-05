@@ -91,12 +91,10 @@ decryptButton.addEventListener("click", async () => {
 
     const cleanedMsgStr = ciphertextDecInput.value.trim().slice(1, -1);
 
-    let delimiter;
-    let doNotUsePq = false;
-    if (cleanedMsgStr.includes("ჰ0M") && !cleanedMsgStr.includes("ჰ0m")) {
-        delimiter = "ჰ0M";
-    } else if (cleanedMsgStr.includes("ჰ0m") && !cleanedMsgStr.includes("ჰ0M")) {
-        delimiter = "ჰ0m";
+    let doNotUsePq;
+    if (cleanedMsgStr.startsWith("0M")) {
+        doNotUsePq = false;
+    } else if (cleanedMsgStr.startsWith("0m")) {
         doNotUsePq = true;
     } else {
         resultMessageDec.textContent = `Invalid ciphertext input!`;
@@ -104,20 +102,12 @@ decryptButton.addEventListener("click", async () => {
         return;
     }
 
-    const timestampStr = cleanedMsgStr.split(delimiter)[1];
-    if (!timestampStr) {
-        resultMessageDec.textContent = `Invalid ciphertext input! Failed to retrieve the timestamp.`;
-        resultMessageDec.style.color = "red";
-        return;
-    }
-
-    const saltAndPayload = cleanedMsgStr.split(delimiter)[0];
-    const payloadStr = saltAndPayload.slice(doNotUsePq ? 1 : 8);
+    const payloadStr = cleanedMsgStr.slice(2);
 
     if (
-        [timestampStr, payloadStr].some(v => !valStringCharSet(v, customBase91CharSet))
+        !valStringCharSet(payloadStr, customBase91CharSet)
     ) {
-        resultMessageDec.textContent = `Invalid ciphertext input! Content not Base91-encoded.`;
+        resultMessageDec.textContent = `Invalid ciphertext input! Content is not Base91 encoded.`;
         resultMessageDec.style.color = "red";
         return;
     }
@@ -127,8 +117,6 @@ decryptButton.addEventListener("click", async () => {
     const decrypted = await decryptMsg(
         addresseeDecInput.value.trim(),
         decodeBase91(privKeyDecInput.value.trim().slice(1, -1)),
-        saltAndPayload.slice(0, doNotUsePq ? 1 : 8),
-        timestamp,
         decodeBase91(payloadStr),
         Hs,
         doNotUsePq,
