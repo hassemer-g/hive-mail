@@ -107,7 +107,7 @@ decryptButton.addEventListener("click", async () => {
     }
 
     const saltAndPayload = ciphertext.split("ჰ0M")[0];
-    const payloadStr = saltAndPayload.slice(8);
+    const payloadStr = saltAndPayload.slice(doNotUsePq ? 1 : 8);
 
     if (
         [timestampStr, payloadStr].some(v => !valStringCharSet(v, customBase91CharSet))
@@ -122,7 +122,7 @@ decryptButton.addEventListener("click", async () => {
     const decrypted = await decryptMsg(
         addresseeDecInput.value.trim(),
         decodeBase91(privKeyDecInput.value.trim().slice(1, -1)),
-        saltAndPayload.slice(0, 8),
+        saltAndPayload.slice(0, doNotUsePq ? 1 : 8),
         timestamp,
         decodeBase91(payloadStr),
         Hs,
