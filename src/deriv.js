@@ -3,6 +3,9 @@ import {
     utf8ToBytes,
     compareUint8arrays,
 } from "./utils.js";
+import {
+    integerToBytes,
+} from "./numbers.js";
 
 function hmac(
     h,
@@ -155,7 +158,7 @@ export function doHashing(
         output = doHKDF(
             compareUint8arrays(mark, prevMark) < 0 ? Hs.sha2 : Hs.blake2,
             concatBytes(itConcat, input),
-            utf8ToBytes(`${i}`),
+            integerToBytes(i),
             mark,
             i === rounds ? outputLength : 16320,
         );
@@ -188,7 +191,7 @@ export function derivMult(
         elements.push(doHKDF(
             compareUint8arrays(salt, prevSalt) < 0 ? Hs.sha2 : Hs.blake2,
             concatBytes(salt, passw),
-            utf8ToBytes(`${i}`),
+            integerToBytes(i),
             salt,
             elLength,
         ));
