@@ -15,7 +15,6 @@ import {
 } from "./hm-pubkeys.js";
 
 const testedRPCs = await testRPCsWithDhive(RPCsArray);
-console.log("testedRPCs: ", testedRPCs);
 
 const resultMessage1 = document.getElementById("resultMessage1Rem");
 
@@ -57,29 +56,31 @@ function valCheckButton() {
 }
 
 accountNameInput.addEventListener("input", () => {
-    const isValid = valAccountNameStructure(accountNameInput.value.trim());
-    accountNameInput.style.borderColor = isValid ? "green" : "red";
+    const t = accountNameInput.value.trim();
+    accountNameInput.style.borderColor = !t ? "" : valAccountNameStructure(t) ? "green" : "red";
 });
 
 accountNameInput.addEventListener("input", valCheckButton);
 
 checkButton.addEventListener("click", async () => {
 
+    const t = accountNameInput.value.trim();
+
     const canBeCleaned = await checkForRemoval(
-        accountNameInput.value.trim(),
+        t,
         testedRPCs,
     );
 
     if (canBeCleaned) {
         keychainContainer.classList.add("visible");
         privActiveKeyContainer.classList.add("visible");
-        resultMessage1.textContent = `The account ${accountNameInput.value.trim()} has Hive-Mail elements in its metadata`;
+        resultMessage1.textContent = `The account ${t} has Hive-Mail elements in its metadata`;
     } else {
         keychainContainer.classList.remove("visible");
         privActiveKeyContainer.classList.remove("visible");
         removeButton.disabled = true;
         removeButton.style.backgroundColor = "";
-        resultMessage1.textContent = `There is nothing to remove from the metadata of account ${accountNameInput.value.trim()}`;
+        resultMessage1.textContent = `There is nothing to remove from the metadata of account ${t}`;
     }
 });
 
@@ -116,8 +117,10 @@ privActiveKeyInput.addEventListener("input", valRemoveButton);
 
 removeButton.addEventListener("click", async () => {
 
+    const t = accountNameInput.value.trim();
+
     const metadata = await removeHMitems(
-        accountNameInput.value.trim(),
+        t,
         testedRPCs,
     );
 
@@ -133,7 +136,7 @@ removeButton.addEventListener("click", async () => {
         const op = [
             "account_update2",
             {
-                account: accountNameInput.value.trim(),
+                account: t,
                 extensions: [],
                 json_metadata: JSON.stringify(metadata, null, 0),
                 posting_json_metadata: "",
@@ -144,13 +147,13 @@ removeButton.addEventListener("click", async () => {
 
             if (useHiveKeychain.checked) {
                 if (window.hive_keychain) {
-                    window.hive_keychain.requestBroadcast(accountNameInput.value.trim(), [op], "Active", function(result) {
+                    window.hive_keychain.requestBroadcast(t, [op], "Active", function(result) {
                         if (result.success) {
-                            resultMessage2.textContent = `Success in removing all Hive-Mail elements from the metadata of account ${accountNameInput.value.trim()}
+                            resultMessage2.textContent = `Success in removing all Hive-Mail elements from the metadata of account ${t}
 Transaction ID: ${result?.result?.id}`;
                             resultMessage2.style.color = "green";
                         } else {
-                            resultMessage2.textContent = `Failed to remove the Hive-Mail elements from the metadata of account ${accountNameInput.value.trim()}
+                            resultMessage2.textContent = `Failed to remove the Hive-Mail elements from the metadata of account ${t}
 Error message: ${result?.message}`;
                             resultMessage2.style.color = "red";
                         }
@@ -162,12 +165,12 @@ Error message: ${result?.message}`;
             } else {
 
                 const result2 = await new dhive.Client(shuffleArray(testedRPCs)).broadcast.sendOperations([op], dhive.PrivateKey.fromString(privActiveKeyInput.value.trim()));
-                resultMessage2.textContent = `Success in removing all Hive-Mail elements from the metadata of account ${accountNameInput.value.trim()}
+                resultMessage2.textContent = `Success in removing all Hive-Mail elements from the metadata of account ${t}
 Transaction ID: ${result2?.id}`;
                 resultMessage2.style.color = "green";
             }
         } catch (err) {
-            resultMessage2.textContent = `Failed to remove the Hive-Mail elements from the metadata of account ${accountNameInput.value.trim()}
+            resultMessage2.textContent = `Failed to remove the Hive-Mail elements from the metadata of account ${t}
 Error message: ${err.message}`;
             resultMessage2.style.color = "red";
         }
@@ -177,5 +180,3 @@ Error message: ${err.message}`;
         resultMessage2.style.color = "red";
     }
 });
-
-
