@@ -27,7 +27,6 @@ import {
 } from "./hm-keys.js";
 
 const testedRPCs = await testRPCsWithDhive(RPCsArray);
-console.log("testedRPCs: ", testedRPCs);
 
 const resultMessage1 = document.getElementById("resultMessage1Gen");
 
@@ -88,23 +87,25 @@ function valCheckButton() {
 }
 
 accountNameInput.addEventListener("input", () => {
-    const isValid = valAccountNameStructure(accountNameInput.value.trim());
-    accountNameInput.style.borderColor = isValid ? "green" : "red";
+    const t = accountNameInput.value.trim();
+    accountNameInput.style.borderColor = !t ? "" : valAccountNameStructure(t) ? "green" : "red";
 });
 
 accountNameInput.addEventListener("input", valCheckButton);
 
 checkButton.addEventListener("click", async () => {
 
+    const t = accountNameInput.value.trim();
+
     const userPubHMkey = await fetchPubKey(
-        accountNameInput.value.trim(),
+        t,
         testedRPCs,
     );
 
     if (userPubHMkey && userPubHMkey instanceof Uint8Array) {
-        resultMessage1.textContent = `The account ${accountNameInput.value.trim()} already has a Hive-Mail key`;
+        resultMessage1.textContent = `The account ${t} already has a Hive-Mail key`;
     } else {
-        resultMessage1.textContent = `The account ${accountNameInput.value.trim()} does not have a Hive-Mail key`;
+        resultMessage1.textContent = `The account ${t} does not have a Hive-Mail key`;
     }
 
     PRIVKEYTOCOPY = null;
@@ -199,8 +200,10 @@ privActiveKeyInput.addEventListener("input", confirmationCheckboxFn);
 
 broadcastButton.addEventListener("click", async () => {
 
+    const t = accountNameInput.value.trim();
+
     const metadata = await checkPubKeyOnchain(
-        accountNameInput.value.trim(),
+        t,
         PUBKEYTOBROADCAST,
         testedRPCs,
     );
@@ -219,7 +222,7 @@ broadcastButton.addEventListener("click", async () => {
         const op = [
             "account_update2",
             {
-                account: accountNameInput.value.trim(),
+                account: t,
                 extensions: [],
                 json_metadata: JSON.stringify(metadata, null, 0),
                 posting_json_metadata: "",
@@ -230,7 +233,7 @@ broadcastButton.addEventListener("click", async () => {
 
             if (useHiveKeychain.checked) {
                 if (window.hive_keychain) {
-                    window.hive_keychain.requestBroadcast(accountNameInput.value.trim(), [op], "Active", function(result) {
+                    window.hive_keychain.requestBroadcast(t, [op], "Active", function(result) {
                         if (result.success) {
                             resultMessage3.textContent = `Transaction successfully broadcast!
 Transaction ID: ${result?.result?.id}`;
@@ -260,5 +263,3 @@ Transaction ID: ${result2?.id}`;
         resultMessage3.style.color = "red";
     }
 });
-
-
