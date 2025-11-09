@@ -22,7 +22,6 @@ import {
 } from "./hm-encrypt.js";
 
 const testedRPCs = await testRPCsWithDhive(RPCsArray);
-console.log("testedRPCs: ", testedRPCs);
 
 const resultMessage = document.getElementById("resultMessageEnc");
 
@@ -50,10 +49,12 @@ let ENCRYPTED_MSG = null;
 
 function valEncryptButton() {
 
+    const p = plaintextInput.value.trim();
+
     if (
         valAccountNameStructure(addresseeInput.value.trim())
-        && typeof plaintextInput.value.trim() === "string"
-        && plaintextInput.value.trim().length
+        && typeof p === "string"
+        && p.length
         && testedRPCs.length
     ) {
         encryptButton.disabled = false;
@@ -69,14 +70,14 @@ function valEncryptButton() {
 }
 
 addresseeInput.addEventListener("input", () => {
-    const isValid = valAccountNameStructure(addresseeInput.value.trim());
-    addresseeInput.style.borderColor = isValid ? "green" : "red";
+    const t = addresseeInput.value.trim();
+    addresseeInput.style.borderColor = !t ? "" : valAccountNameStructure(t) ? "green" : "red";
 });
 addresseeInput.addEventListener("input", valEncryptButton);
 
 plaintextInput.addEventListener("input", () => {
-    const isValid = typeof plaintextInput.value.trim() === "string" && plaintextInput.value.trim().length > 0;
-    plaintextInput.style.borderColor = isValid ? "green" : "red";
+    const p = plaintextInput.value.trim();
+    plaintextInput.style.borderColor = !p ? "" : (typeof p === "string" && p.length) ? "green" : "red";
 });
 plaintextInput.addEventListener("input", valEncryptButton);
 
@@ -89,15 +90,17 @@ usePQ.addEventListener("change", () => {
 
 encryptButton.addEventListener("click", async () => {
 
+    const t = addresseeInput.value.trim();
+
     let recipientPubHMkey = null;
     try {
 
         recipientPubHMkey = await fetchPubKey(
-            addresseeInput.value.trim(),
+            t,
             testedRPCs,
         );
     } catch (err) {
-        resultMessage.textContent = `Failed to get the metadata from account "${addresseeInput.value.trim()}"!`;
+        resultMessage.textContent = `Failed to get the metadata from account "${t}"!`;
         resultMessage.style.color = "red";
     }
 
@@ -105,7 +108,7 @@ encryptButton.addEventListener("click", async () => {
 
         const msgStr = await encryptMsg(
             utf8ToBytes(plaintextInput.value.trim()),
-            addresseeInput.value.trim(),
+            t,
             recipientPubHMkey,
             Hs,
             usePQ.checked ? false : true,
@@ -126,7 +129,7 @@ encryptButton.addEventListener("click", async () => {
             resultMessage.style.color = "red";
         }
     } else {
-        resultMessage.textContent = `The account ${addresseeInput.value.trim()} does not have a Hive-Mail public key registered onchain!`;
+        resultMessage.textContent = `The account ${t} does not have a Hive-Mail public key registered onchain!`;
         resultMessage.style.color = "red";
     }
 });
