@@ -63,27 +63,29 @@ function valDecryptButton() {
         decryptButton.disabled = false;
         decryptButton.style.backgroundColor = "green";
     } else {
+
         decryptButton.disabled = true;
         decryptButton.style.backgroundColor = "";
         resultMessageDec.textContent = "";
+
     }
 }
 
 addresseeDecInput.addEventListener("input", () => {
-    const isValid = valAccountNameStructure(addresseeDecInput.value.trim());
-    addresseeDecInput.style.borderColor = isValid ? "green" : "red";
+    const t = addresseeDecInput.value.trim();
+    addresseeDecInput.style.borderColor = !t ? "" : valAccountNameStructure(t) ? "green" : "red";
 });
 addresseeDecInput.addEventListener("input", valDecryptButton);
 
 ciphertextDecInput.addEventListener("input", () => {
-    const isValid = valCiphertext(ciphertextDecInput.value.trim());
-    ciphertextDecInput.style.borderColor = isValid ? "green" : "red";
+    const c = ciphertextDecInput.value.trim();
+    ciphertextDecInput.style.borderColor = !c ? "" : valCiphertext(c) ? "green" : "red";
 });
 ciphertextDecInput.addEventListener("input", valDecryptButton);
 
 privKeyDecInput.addEventListener("input", () => {
-    const isValid = valPriv(privKeyDecInput.value.trim());
-    privKeyDecInput.style.borderColor = isValid ? "green" : "red";
+    const k = privKeyDecInput.value.trim();
+    privKeyDecInput.style.borderColor = !k ? "" : valPriv(k) ? "green" : "red";
 });
 privKeyDecInput.addEventListener("input", valDecryptButton);
 
@@ -148,5 +150,3 @@ copyButtonDec.addEventListener("click", () => {
         setTimeout(() => copyButtonDec.textContent = "Copy the Decrypted Message", 5000);
     });
 });
-
-
