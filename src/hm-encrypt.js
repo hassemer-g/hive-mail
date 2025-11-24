@@ -1,10 +1,11 @@
 import {
     concatBytes,
     utf8ToBytes,
+    wipeUint8,
 } from "./utils.js";
 import {
-    encodeBase91,
-} from "./base91.js";
+    doHashing,
+} from "./deriv.js";
 import {
     encryptXChaCha20Poly1305,
 } from "./xchacha20-poly1305.js";
@@ -18,7 +19,6 @@ import {
     buildPQsharedSecret,
 } from "./pq.js";
 import { buildX25519SharedSecret } from "./x25519.js";
-import { derivForMsg } from "./hm-deriv.js";
 
 export async function encryptMsg(
     plaintext,
@@ -40,27 +40,20 @@ export async function encryptMsg(
         ({ sharedSecret: hqcSharedSecret, encryptedSharedSecret: hqcEphemeral } = await buildPQsharedSecret(recipientPubHQCkey, "hqc-256"));
     }
 
-    const msgInfo = utf8ToBytes(`ჰM0 ${recipientName} ${""} ${""} ${""} ${""} ${""} ${recipientPubX25519Key.length} ${x25519Ephemeral.length} ${x25519SharedSecret.length} ${recipientPubKyberKey.length} ${kyberEphemeral.length} ${kyberSharedSecret.length} ${recipientPubHQCkey.length} ${hqcEphemeral.length} ${hqcSharedSecret.length} 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0`);
-
-    const keypairs = derivForMsg(
-        msgInfo,
+    const keypairs = doHashing(
+        concatBytes(x25519SharedSecret, kyberSharedSecret, hqcSharedSecret, utf8ToBytes(`ჰM0 ${recipientName} ${""} ${""} ${""} ${""} ${""} ${recipientPubX25519Key.length} ${x25519Ephemeral.length} ${x25519SharedSecret.length} ${recipientPubKyberKey.length} ${kyberEphemeral.length} ${kyberSharedSecret.length} ${recipientPubHQCkey.length} ${hqcEphemeral.length} ${hqcSharedSecret.length} 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 ჰ`), recipientPubX25519Key, x25519Ephemeral, recipientPubKyberKey, kyberEphemeral, recipientPubHQCkey, hqcEphemeral),
         Hs,
-        recipientPubX25519Key,
-        x25519Ephemeral,
-        x25519SharedSecret,
-        recipientPubKyberKey,
-        kyberEphemeral,
-        kyberSharedSecret,
-        recipientPubHQCkey,
-        hqcEphemeral,
-        hqcSharedSecret,
+        [24, 12, 24, 32, 32, 32],
+        1000,
     );
+    wipeUint8(x25519SharedSecret, kyberSharedSecret, hqcSharedSecret);
 
     const ciphertext1 = encryptXChaCha20Poly1305(
         plaintext,
         keypairs[5],
         keypairs[2],
     );
+    wipeUint8(plaintext);
 
     let finalCiphertext;
     if (doNotUsePq) {
@@ -81,12 +74,10 @@ export async function encryptMsg(
         );
     }
 
-    const payload = concatBytes(
+    return concatBytes(
         x25519Ephemeral,
         kyberEphemeral,
         hqcEphemeral,
         finalCiphertext,
     );
-
-    return `${doNotUsePq ? "0m" : "0M"}` + encodeBase91(payload);
 }
