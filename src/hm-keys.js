@@ -11,14 +11,12 @@ import {
 export function valHMprivKey(
     privKey,
 ) {
-
     return privKey instanceof Uint8Array && privKey.length === 10517;
 }
 
 export function valHMpubKey(
     pubKey,
 ) {
-
     return pubKey instanceof Uint8Array && pubKey.length === 8845;
 }
 
@@ -30,13 +28,6 @@ export async function createHMkeyPair() {
 
     const privKey = concatBytes(privX25519Key, privKyberKey, privHQCkey);
     const pubKey = concatBytes(pubX25519Key, pubKyberKey, pubHQCkey);
-
-    if (
-        !valHMprivKey(privKey)
-        || !valHMpubKey(pubKey)
-    ) {
-        throw new Error(`Function "createHMkeyPair" failed!`);
-    }
 
     return { privKey, pubKey };
 }
