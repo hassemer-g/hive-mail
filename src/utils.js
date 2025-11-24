@@ -1,11 +1,8 @@
 
 export function concatBytes(...arrays) {
-    if (arrays.length === 0) return new Uint8Array(0);
-
     let totalLength = 0;
     for (let i = 0; i < arrays.length; i++) {
         const a = arrays[i];
-        if (!(a instanceof Uint8Array)) throw new TypeError(`concatBytes: argument ${i} is not a Uint8Array`);
         totalLength += a.length;
     }
 
@@ -32,8 +29,13 @@ export function compareUint8arrays(a, b) {
     return lenA - lenB;
 }
 
+export function wipeUint8() {
+    for (let i = 0; i < arguments.length; i++) {
+        arguments[i].fill(0);
+    }
+}
+
 export function utf8ToBytes(str) {
-    if (typeof str !== "string") throw new Error("string expected");
     return new Uint8Array(new TextEncoder().encode(str));
 }
 export function bytesToUtf8(bytes) {
@@ -49,6 +51,7 @@ export function randomBytes(bytesLength) {
     if (crypto && typeof crypto.randomBytes === "function") {
         return Uint8Array.from(crypto.randomBytes(bytesLength));
     }
+
     throw new Error("No cryptographically secure random source available.");
 }
 
