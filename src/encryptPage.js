@@ -122,7 +122,7 @@ encryptButton.addEventListener("click", async () => {
             && plaintext.endsWith(`"`)
             && valStringCharSet(plaintext.slice(3, -1), customBase91CharSet)
         ) {
-            plaintextBytes = decodeBase91(plaintext.slice(3, -1);
+            plaintextBytes = decodeBase91(plaintext.slice(3, -1));
             fileEncInput = true;
         } else {
             plaintextBytes = utf8ToBytes(plaintext);
