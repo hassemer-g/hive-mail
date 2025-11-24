@@ -1,15 +1,10 @@
 import {
     customBase91CharSet,
 } from "./charsets.js";
-import { valStringCharSet } from "./val.js";
 
 export function encodeBase91(
     data,
 ) {
-
-    if (!(data instanceof Uint8Array)) {
-        throw new Error(`Input to the "encodeBase91" function should be a Uint8Array.`);
-    }
 
     const len = data.length;
     let ret = "";
@@ -50,13 +45,6 @@ export function encodeBase91(
 export function decodeBase91(
     data,
 ) {
-
-    if (
-        typeof data !== "string"
-        || !valStringCharSet(data, customBase91CharSet)
-    ) {
-        throw new Error(`Input to the "decodeBase91" function should be a Base91-encoded string.`);
-    }
 
     const len = data.length;
     const ret = [];
