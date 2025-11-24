@@ -20,9 +20,6 @@ import {
     decodeBase91,
 } from "./base91.js";
 import {
-    bytesToInteger,
-} from "./numbers.js";
-import {
     valAccountNameStructure,
 } from "./val-h.js";
 import {
