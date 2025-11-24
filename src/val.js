@@ -1,5 +1,4 @@
 
-
 export function valStringCharSet(
     input,
     charSet,
