@@ -1,5 +1,4 @@
 
-
 export const RPCsArray = [
     "https://api.hive.blog",
     "https://hive-api.arcange.eu",
