@@ -1,7 +1,11 @@
 import {
+    concatBytes,
     utf8ToBytes,
-    bytesToUtf8,
+    wipeUint8,
 } from "./utils.js";
+import {
+    doHashing,
+} from "./deriv.js";
 import {
     decryptXChaCha20Poly1305,
 } from "./xchacha20-poly1305.js";
@@ -19,7 +23,6 @@ import {
     retrieveX25519SharedSecret,
     getX25519PubKey,
 } from "./x25519.js";
-import { derivForMsg } from "./hm-deriv.js";
 
 export async function decryptMsg(
     recipientName,
@@ -30,7 +33,8 @@ export async function decryptMsg(
 ) {
 
     if (
-        typeof recipientName !== "string"
+        typeof doNotUsePq !== "boolean"
+        || typeof recipientName !== "string"
         || !recipientName.trim()
         || !(payloadBytes instanceof Uint8Array)
         || (!doNotUsePq && payloadBytes.length < 16022)
@@ -43,8 +47,7 @@ export async function decryptMsg(
 
         const x25519Ephemeral = payloadBytes.slice(0, 32);
 
-        let kyberEphemeral = new Uint8Array(0), hqcEphemeral = new Uint8Array(0);
-        let ciphertext;
+        let ciphertext, kyberEphemeral = new Uint8Array(0), hqcEphemeral = new Uint8Array(0);
         if (doNotUsePq) {
             ciphertext = payloadBytes.slice(32);
         } else {
@@ -80,21 +83,13 @@ export async function decryptMsg(
         const pubKyberKeyBytes = extractPQpubKey(privKyberKey, "ml-kem-1024");
         const pubHQCkeyBytes = extractPQpubKey(privHQCkey, "hqc-256");
 
-        const msgInfo = utf8ToBytes(`ჰM0 ${recipientName} ${""} ${""} ${""} ${""} ${""} ${pubX25519KeyBytes.length} ${x25519Ephemeral.length} ${x25519SharedSecret.length} ${pubKyberKeyBytes.length} ${kyberEphemeral.length} ${kyberSharedSecret.length} ${pubHQCkeyBytes.length} ${hqcEphemeral.length} ${hqcSharedSecret.length} 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0`);
-
-        const keypairs = derivForMsg(
-            msgInfo,
+        const keypairs = doHashing(
+            concatBytes(x25519SharedSecret, kyberSharedSecret, hqcSharedSecret, utf8ToBytes(`ჰM0 ${recipientName} ${""} ${""} ${""} ${""} ${""} ${pubX25519KeyBytes.length} ${x25519Ephemeral.length} ${x25519SharedSecret.length} ${pubKyberKeyBytes.length} ${kyberEphemeral.length} ${kyberSharedSecret.length} ${pubHQCkeyBytes.length} ${hqcEphemeral.length} ${hqcSharedSecret.length} 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 ჰ`), pubX25519KeyBytes, x25519Ephemeral, pubKyberKeyBytes, kyberEphemeral, pubHQCkeyBytes, hqcEphemeral),
             Hs,
-            pubX25519KeyBytes,
-            x25519Ephemeral,
-            x25519SharedSecret,
-            pubKyberKeyBytes,
-            kyberEphemeral,
-            kyberSharedSecret,
-            pubHQCkeyBytes,
-            hqcEphemeral,
-            hqcSharedSecret,
+            [24, 12, 24, 32, 32, 32],
+            1000,
         );
+        wipeUint8(x25519SharedSecret, kyberSharedSecret, hqcSharedSecret);
 
         let finalDecrypted;
         if (doNotUsePq) {
@@ -126,13 +121,12 @@ export async function decryptMsg(
             );
         }
 
-        const decryptedStr = bytesToUtf8(finalDecrypted);
-
         if (
-            typeof decryptedStr === "string"
-            && decryptedStr.trim()
+            finalDecrypted
+            && finalDecrypted instanceof Uint8Array
+            && finalDecrypted.length
         ) {
-            return decryptedStr;
+            return finalDecrypted;
         }
 
         return null;
