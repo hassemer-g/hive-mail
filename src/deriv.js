@@ -4,9 +4,6 @@ import {
     compareUint8arrays,
     wipeUint8,
 } from "./utils.js";
-import {
-    integerToBytes,
-} from "./numbers.js";
 
 function hmac(
     h,
@@ -129,20 +126,50 @@ export function doHashing(
     rounds = 5,
 ) {
 
-    let hashMat, salt, passwPt1, passwPt2, passwPt3;
-    for (let i = 1; !(i > rounds); i++) {
+    let i = 1 >>> 0;
+    const iUint8 = new Uint8Array(4);
+    const iView = new DataView(iUint8.buffer);
 
-        const itInput =
-            i === 1 ? concatBytes(integerToBytes(i), utf8ToBytes(`${input.length} ${rounds} ${JSON.stringify(outputOutline, null, 0)}`), input)
-            : concatBytes(integerToBytes(i), hashMat);
-        wipeUint8(input);
+    iView.setUint32(0, i, true);
+    const itInput1 = concatBytes(iUint8, utf8ToBytes(`${input.length} ${rounds} ${JSON.stringify(outputOutline)}`), input);
+    wipeUint8(input);
+
+    let j = 0 >>> 0;
+    const jUint8 = new Uint8Array(1);
+    const jView = new DataView(jUint8.buffer);
+
+    const hashArray1 = [];
+
+    for (const [, fn] of Object.entries(Hs)) {
+        j = (j + 1) >>> 0;
+        jView.setUint32(0, j, true);
+        fn.update(jUint8);
+        fn.update(itInput1);
+        hashArray1.push(fn.digest("binary"));
+        fn.init();
+    }
+    j = 0 >>> 0;
+
+    let hashMat = concatBytes(...(hashArray1.map(u => u.reverse()).sort(compareUint8arrays).reverse())).reverse();
+
+    let salt, passwPt1, passwPt2, passwPt3;
+
+    while (i < rounds) {
+
+        i = (i + 1) >>> 0;
+        iView.setUint32(0, i, true);
+        const itInput = concatBytes(iUint8, hashMat);
 
         const hashArray = [];
-        for (const [j, [, fn]] of Object.entries(Hs).entries()) {
-            fn.update(concatBytes(integerToBytes(j), itInput));
+        for (const [, fn] of Object.entries(Hs)) {
+            j = (j + 1) >>> 0;
+            jView.setUint32(0, j, true);
+            fn.update(jUint8);
+            fn.update(itInput);
             hashArray.push(fn.digest("binary"));
             fn.init();
         }
+        j = 0 >>> 0;
 
         const order1 = compareUint8arrays(hashArray[1], hashArray[2]);
         const order2 = compareUint8arrays(hashArray[0], hashArray[3]);
@@ -151,29 +178,29 @@ export function doHashing(
         if (order1 < 0) {
             if (order2 < 0) {
                 if (order3 < 0) {
-                    hashMat = concatBytes(...(hashArray.map(u => u.reverse()).sort(compareUint8arrays).reverse())).reverse()
+                    hashMat = concatBytes(...(hashArray.map(u => u.reverse()).sort(compareUint8arrays).reverse())).reverse();
                 } else {
-                    hashMat = concatBytes(...(hashArray.map(u => u.reverse()).sort(compareUint8arrays))).reverse()
+                    hashMat = concatBytes(...(hashArray.map(u => u.reverse()).sort(compareUint8arrays))).reverse();
                 }
             } else {
                 if (order3 < 0) {
-                    hashMat = concatBytes(...(hashArray.map(u => u.reverse()).sort(compareUint8arrays).reverse()))
+                    hashMat = concatBytes(...(hashArray.map(u => u.reverse()).sort(compareUint8arrays).reverse()));
                 } else {
-                    hashMat = concatBytes(...(hashArray.map(u => u.reverse()).sort(compareUint8arrays)))
+                    hashMat = concatBytes(...(hashArray.map(u => u.reverse()).sort(compareUint8arrays)));
                 }
             }
         } else {
             if (order2 < 0) {
                 if (order3 < 0) {
-                    hashMat = concatBytes(...(hashArray.sort(compareUint8arrays).reverse())).reverse()
+                    hashMat = concatBytes(...(hashArray.sort(compareUint8arrays).reverse())).reverse();
                 } else {
-                    hashMat = concatBytes(...(hashArray.sort(compareUint8arrays))).reverse()
+                    hashMat = concatBytes(...(hashArray.sort(compareUint8arrays))).reverse();
                 }
             } else {
                 if (order3 < 0) {
-                    hashMat = concatBytes(...(hashArray.sort(compareUint8arrays).reverse()))
+                    hashMat = concatBytes(...(hashArray.sort(compareUint8arrays).reverse()));
                 } else {
-                    hashMat = concatBytes(...(hashArray.sort(compareUint8arrays)))
+                    hashMat = concatBytes(...(hashArray.sort(compareUint8arrays)));
                 }
             }
         }
@@ -187,20 +214,18 @@ export function doHashing(
     const passw = concatBytes(passwPt3, passwPt2, passwPt1);
 
     const outputs = [];
-    let i = 1;
+    i = 0 >>> 0;
     for (const elementLength of outputOutline) {
 
-        const iBytes = integerToBytes(i);
-
+        i = (i + 1) >>> 0;
+        iView.setUint32(0, i, true);
         outputs.push(doHKDF(
             Hs.sha3,
-            concatBytes(iBytes, integerToBytes(elementLength), passw),
-            iBytes,
+            passw,
+            iUint8,
             salt,
             elementLength,
         ));
-
-        i++;
     }
 
     if (outputs.length === 1) {
