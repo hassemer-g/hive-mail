@@ -39,7 +39,7 @@ function hmac(
 
     return out;
 }
-export function doHKDF(
+function doHKDF(
     h,
     ikm,
     info = new Uint8Array(0),
