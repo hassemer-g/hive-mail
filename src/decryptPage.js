@@ -111,11 +111,19 @@ decryptButton.addEventListener("click", async () => {
         } else {
             resultMessageDec.textContent = `Invalid ciphertext input!`;
             resultMessageDec.style.color = "red";
+            privKeyDecInput.value = "";
+            privKeyDecInput.style.borderColor = "";
+            decryptButton.disabled = true;
+            decryptButton.style.backgroundColor = "";
             return;
         }
     } else {
         resultMessageDec.textContent = `Invalid ciphertext input!`;
         resultMessageDec.style.color = "red";
+        privKeyDecInput.value = "";
+        privKeyDecInput.style.borderColor = "";
+        decryptButton.disabled = true;
+        decryptButton.style.backgroundColor = "";
         return;
     }
 
@@ -124,44 +132,65 @@ decryptButton.addEventListener("click", async () => {
     ) {
         resultMessageDec.textContent = `Invalid ciphertext input! Payload is not Base91 encoded.`;
         resultMessageDec.style.color = "red";
+        privKeyDecInput.value = "";
+        privKeyDecInput.style.borderColor = "";
+        decryptButton.disabled = true;
+        decryptButton.style.backgroundColor = "";
         return;
     }
 
-    const decrypted = await decryptMsg(
-        addresseeDecInput.value.trim(),
-        decodeBase91(privKeyDecInput.value.trim().slice(1, -1)),
-        decodeBase91(payloadStr),
-        Hs,
-        doNotUsePq,
-    );
+    try {
 
-    let decryptedStr;
-    if (usedFileEnc) {
-        decryptedStr = `"F"${encodeBase91(decrypted)}"`;
-    } else {
-        decryptedStr = bytesToUtf8(decrypted);
-    }
+        const decrypted = await decryptMsg(
+            addresseeDecInput.value.trim(),
+            decodeBase91(privKeyDecInput.value.trim().slice(1, -1)),
+            decodeBase91(payloadStr),
+            Hs,
+            doNotUsePq,
+        );
 
-    if (
-        decryptedStr
-        && typeof decryptedStr === "string"
-    ) {
+        let decryptedStr;
+        if (usedFileEnc) {
+            decryptedStr = `"F"${encodeBase91(decrypted)}"`;
+        } else {
+            decryptedStr = bytesToUtf8(decrypted);
+        }
 
-        resultMessageDec.textContent = `Message successfully decrypted!`;
-        resultMessageDec.style.color = "green";
-        copyButtonDec.disabled = false;
-        copyButtonDec.style.backgroundColor = "darkorange";
-        DECRYPTED_MSG = decryptedStr;
+        if (
+            decryptedStr
+            && typeof decryptedStr === "string"
+        ) {
 
-    } else {
-        resultMessageDec.textContent = `Failed to decrypt message!`;
+            resultMessageDec.textContent = `Message successfully decrypted!`;
+            resultMessageDec.style.color = "green";
+            copyButtonDec.disabled = false;
+            copyButtonDec.style.backgroundColor = "darkorange";
+            DECRYPTED_MSG = decryptedStr;
+            privKeyDecInput.value = "";
+            privKeyDecInput.style.borderColor = "";
+            decryptButton.disabled = true;
+            decryptButton.style.backgroundColor = "";
+
+        } else {
+
+            DECRYPTED_MSG = null;
+            resultMessageDec.textContent = `Failed to decrypt message!`;
+            resultMessageDec.style.color = "red";
+            privKeyDecInput.value = "";
+            privKeyDecInput.style.borderColor = "";
+            decryptButton.disabled = true;
+            decryptButton.style.backgroundColor = "";
+        }
+
+    } catch (err) {
+        DECRYPTED_MSG = null;
+        resultMessageDec.textContent = `Failed to decrypt message! Error: ${err.message}`;
         resultMessageDec.style.color = "red";
+        privKeyDecInput.value = "";
+        privKeyDecInput.style.borderColor = "";
+        decryptButton.disabled = true;
+        decryptButton.style.backgroundColor = "";
     }
-
-    privKeyDecInput.value = "";
-    privKeyDecInput.style.borderColor = "";
-    decryptButton.disabled = true;
-    decryptButton.style.backgroundColor = "";
 });
 
 copyButtonDec.addEventListener("click", () => {
