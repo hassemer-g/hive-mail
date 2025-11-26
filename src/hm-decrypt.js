@@ -33,10 +33,7 @@ export async function decryptMsg(
 ) {
 
     if (
-        typeof doNotUsePq !== "boolean"
-        || typeof recipientName !== "string"
-        || !recipientName.trim()
-        || !(payloadBytes instanceof Uint8Array)
+        !(payloadBytes instanceof Uint8Array)
         || (!doNotUsePq && payloadBytes.length < 16022)
     ) {
         console.error(`Incorrect inputs to the "decryptMsg" function.`);
@@ -78,13 +75,9 @@ export async function decryptMsg(
                 return null;
             }
         }
-
-        const pubX25519KeyBytes = getX25519PubKey(privX25519Key);
-        const pubKyberKeyBytes = extractPQpubKey(privKyberKey, "ml-kem-1024");
-        const pubHQCkeyBytes = extractPQpubKey(privHQCkey, "hqc-256");
-
+        
         const keypairs = doHashing(
-            concatBytes(x25519SharedSecret, kyberSharedSecret, hqcSharedSecret, utf8ToBytes(`ჰM0 ${recipientName} ${""} ${""} ${""} ${""} ${""} ${pubX25519KeyBytes.length} ${x25519Ephemeral.length} ${x25519SharedSecret.length} ${pubKyberKeyBytes.length} ${kyberEphemeral.length} ${kyberSharedSecret.length} ${pubHQCkeyBytes.length} ${hqcEphemeral.length} ${hqcSharedSecret.length} 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 ჰ`), pubX25519KeyBytes, x25519Ephemeral, pubKyberKeyBytes, kyberEphemeral, pubHQCkeyBytes, hqcEphemeral),
+            concatBytes(x25519SharedSecret, kyberSharedSecret, hqcSharedSecret, utf8ToBytes(`ჰM0 ${recipientName} ${pubX25519KeyBytes.length} ${x25519Ephemeral.length} ${x25519SharedSecret.length} ${pubKyberKeyBytes.length} ${kyberEphemeral.length} ${kyberSharedSecret.length} ${pubHQCkeyBytes.length} ${hqcEphemeral.length} ${hqcSharedSecret.length} 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 ჰ`), getX25519PubKey(privX25519Key), x25519Ephemeral, extractPQpubKey(privKyberKey, "ml-kem-1024"), kyberEphemeral, extractPQpubKey(privHQCkey, "hqc-256"), hqcEphemeral),
             Hs,
             [24, 12, 24, 32, 32, 32],
             1000,
