@@ -2,6 +2,7 @@ import {
     concatBytes,
     utf8ToBytes,
     compareUint8arrays,
+    wipeUint8,
 } from "./utils.js";
 
 function hmac(
@@ -39,6 +40,7 @@ function hmac(
 
     return out;
 }
+
 function doHKDF(
     h,
     ikm,
@@ -122,32 +124,34 @@ export function doHashing(
     Hs,
     outputOutline = [64],
     rounds = 5,
+    toWipeInput = false,
 ) {
 
-    let i = 1 >>> 0;
     const iUint8 = new Uint8Array(4);
     const iView = new DataView(iUint8.buffer);
 
+    let i = 1 >>> 0;
     iView.setUint32(0, i, true);
-    const itInput1 = concatBytes(iUint8, utf8ToBytes(`${input.length} ${rounds} ${JSON.stringify(outputOutline)}`), input);
+    const initInput = concatBytes(iUint8, utf8ToBytes(`${input.length} ${rounds} ${JSON.stringify(outputOutline)}`), input);
+    if (toWipeInput) { wipeUint8(input); }
 
-    let j = 0 >>> 0;
     const jUint8 = new Uint8Array(4);
     const jView = new DataView(jUint8.buffer);
 
-    const hashArray1 = [];
-
+    const initHashArray = [];
+    let j = 0 >>> 0;
     for (const [, fn] of Object.entries(Hs)) {
         j = (j + 1) >>> 0;
         jView.setUint32(0, j, true);
         fn.update(jUint8);
-        fn.update(itInput1);
-        hashArray1.push(fn.digest("binary"));
+        fn.update(initInput);
+        initHashArray.push(fn.digest("binary"));
         fn.init();
     }
+    wipeUint8(initInput);
     j = 0 >>> 0;
 
-    let hashMat = concatBytes(...(hashArray1.map(u => u.reverse()).sort(compareUint8arrays).reverse())).reverse();
+    let hashMat = concatBytes(...(initHashArray.map(u => u.reverse()).sort(compareUint8arrays).reverse())).reverse();
 
     let salt, passwPt1, passwPt2, passwPt3;
 
