@@ -33,7 +33,10 @@ export async function decryptMsg(
 ) {
 
     if (
-        !(payloadBytes instanceof Uint8Array)
+        typeof doNotUsePq !== "boolean"
+        || typeof recipientName !== "string"
+        || !recipientName.trim()
+        || !(payloadBytes instanceof Uint8Array)
         || (!doNotUsePq && payloadBytes.length < 16022)
     ) {
         console.error(`Incorrect inputs to the "decryptMsg" function.`);
@@ -58,7 +61,7 @@ export async function decryptMsg(
         const privHQCkey = privKeyBytes.slice(3200);
 
         const x25519SharedSecret = retrieveX25519SharedSecret(privX25519Key, x25519Ephemeral);
-        if (!(x25519SharedSecret instanceof Uint8Array)) {
+        if (!(x25519SharedSecret instanceof Uint8Array) || x25519SharedSecret.length !== 32) {
             return null;
         }
 
@@ -66,21 +69,26 @@ export async function decryptMsg(
         if (!doNotUsePq) {
 
             kyberSharedSecret = await retrievePQsharedSecret(privKyberKey, kyberEphemeral, "ml-kem-1024");
-            if (!(kyberSharedSecret instanceof Uint8Array)) {
+            if (kyberSharedSecret.length !== 32) {
                 return null;
             }
 
             hqcSharedSecret = await retrievePQsharedSecret(privHQCkey, hqcEphemeral, "hqc-256");
-            if (!(hqcSharedSecret instanceof Uint8Array)) {
+            if (hqcSharedSecret.length !== 64) {
                 return null;
             }
         }
-        
+
+        const pubX25519KeyBytes = getX25519PubKey(privX25519Key);
+        const pubKyberKeyBytes = extractPQpubKey(privKyberKey, "ml-kem-1024");
+        const pubHQCkeyBytes = extractPQpubKey(privHQCkey, "hqc-256");
+
         const keypairs = doHashing(
-            concatBytes(x25519SharedSecret, kyberSharedSecret, hqcSharedSecret, utf8ToBytes(`ჰM0 ${recipientName} ${pubX25519KeyBytes.length} ${x25519Ephemeral.length} ${x25519SharedSecret.length} ${pubKyberKeyBytes.length} ${kyberEphemeral.length} ${kyberSharedSecret.length} ${pubHQCkeyBytes.length} ${hqcEphemeral.length} ${hqcSharedSecret.length} 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 ჰ`), getX25519PubKey(privX25519Key), x25519Ephemeral, extractPQpubKey(privKyberKey, "ml-kem-1024"), kyberEphemeral, extractPQpubKey(privHQCkey, "hqc-256"), hqcEphemeral),
+            concatBytes(x25519SharedSecret, kyberSharedSecret, hqcSharedSecret, utf8ToBytes(`ჰM0 ${recipientName}      ${pubX25519KeyBytes.length} ${x25519Ephemeral.length} ${x25519SharedSecret.length} ${pubKyberKeyBytes.length} ${kyberEphemeral.length} ${kyberSharedSecret.length} ${pubHQCkeyBytes.length} ${hqcEphemeral.length} ${hqcSharedSecret.length} 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 ჰ`), pubX25519KeyBytes, x25519Ephemeral, pubKyberKeyBytes, kyberEphemeral, pubHQCkeyBytes, hqcEphemeral),
             Hs,
             [24, 12, 24, 32, 32, 32],
             1000,
+            true,
         );
         wipeUint8(x25519SharedSecret, kyberSharedSecret, hqcSharedSecret);
 
