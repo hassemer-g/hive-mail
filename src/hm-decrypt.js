@@ -1,7 +1,7 @@
 import {
-    concatBytes,
+    concatUint8Arr,
     utf8ToBytes,
-    wipeUint8,
+    wipeUint8Arr,
 } from "./utils.js";
 import {
     doHashing,
@@ -29,68 +29,69 @@ export async function decryptMsg(
     privKeyBytes,
     payloadBytes,
     Hs,
-    doNotUsePq = false,
 ) {
-
-    if (
-        typeof doNotUsePq !== "boolean"
-        || typeof recipientName !== "string"
-        || !recipientName.trim()
-        || !(payloadBytes instanceof Uint8Array)
-        || (!doNotUsePq && payloadBytes.length < 16022)
-    ) {
-        console.error(`Incorrect inputs to the "decryptMsg" function.`);
-        return null;
-    }
-
     try {
+        const prefix = payloadBytes.subarray(0, 4);
+        const prefixStr = (String((prefix[0] | prefix[1] << 8 | prefix[2] << 16 | prefix[3] << 24) >>> 0)).padStart(10, "0");
+        const HM_version = prefixStr.slice(0, 3);
+        const HM_mode = prefixStr.slice(3, 7);
 
-        const x25519Ephemeral = payloadBytes.slice(0, 32);
+        let doNotUsePq = false, inputIsFile = false;
+        if (HM_mode === "0000") { }
+        else if (HM_mode === "0001") { doNotUsePq = true; }
+        else if (HM_mode === "0002") { inputIsFile = true; }
+        else if (HM_mode === "0003") { doNotUsePq = true; inputIsFile = true; }
+        else {
+            console.error(`Payload is corrupted!`);
+            return null;
+        }
+
+        const x25519Ephemeral = payloadBytes.subarray(4, 36);
 
         let ciphertext, kyberEphemeral = new Uint8Array(0), hqcEphemeral = new Uint8Array(0);
         if (doNotUsePq) {
-            ciphertext = payloadBytes.slice(32);
+            ciphertext = payloadBytes.subarray(36);
         } else {
-            kyberEphemeral = payloadBytes.slice(32, 1600);
-            hqcEphemeral = payloadBytes.slice(1600, 16021);
-            ciphertext = payloadBytes.slice(16021);
+            kyberEphemeral = payloadBytes.subarray(36, 1604);
+            hqcEphemeral = payloadBytes.subarray(1604, 16025);
+            ciphertext = payloadBytes.subarray(16025);
         }
 
-        const privX25519Key = privKeyBytes.slice(0, 32);
-        const privKyberKey = privKeyBytes.slice(32, 3200);
-        const privHQCkey = privKeyBytes.slice(3200);
-
-        const x25519SharedSecret = retrieveX25519SharedSecret(privX25519Key, x25519Ephemeral);
-        if (!(x25519SharedSecret instanceof Uint8Array) || x25519SharedSecret.length !== 32) {
+        if ((String(ciphertext.length).slice(-3)).padStart(3, "0") !== prefixStr.slice(-3)) {
+            console.error(`Payload is corrupted! Incorrect ciphertext length.`);
             return null;
         }
+
+        const privX25519Key = privKeyBytes.subarray(0, 32);
+        const privKyberKey = privKeyBytes.subarray(32, 3200);
+        const privHQCkey = privKeyBytes.subarray(3200);
+
+        const x25519SharedSecret = retrieveX25519SharedSecret(privX25519Key, x25519Ephemeral);
+        if (!(x25519SharedSecret instanceof Uint8Array) || x25519SharedSecret.length !== 32) { return null; }
 
         let kyberSharedSecret = new Uint8Array(0), hqcSharedSecret = new Uint8Array(0);
         if (!doNotUsePq) {
 
             kyberSharedSecret = await retrievePQsharedSecret(privKyberKey, kyberEphemeral, "ml-kem-1024");
-            if (kyberSharedSecret.length !== 32) {
-                return null;
-            }
+            if (!(kyberSharedSecret instanceof Uint8Array) || kyberSharedSecret.length !== 32) { return null; }
 
             hqcSharedSecret = await retrievePQsharedSecret(privHQCkey, hqcEphemeral, "hqc-256");
-            if (hqcSharedSecret.length !== 64) {
-                return null;
-            }
+            if (!(hqcSharedSecret instanceof Uint8Array) || hqcSharedSecret.length !== 64) { return null; }
         }
 
         const pubX25519KeyBytes = getX25519PubKey(privX25519Key);
         const pubKyberKeyBytes = extractPQpubKey(privKyberKey, "ml-kem-1024");
         const pubHQCkeyBytes = extractPQpubKey(privHQCkey, "hqc-256");
+        wipeUint8Arr(privKeyBytes);
 
         const keypairs = doHashing(
-            concatBytes(x25519SharedSecret, kyberSharedSecret, hqcSharedSecret, utf8ToBytes(`ჰM0 ${recipientName}      ${pubX25519KeyBytes.length} ${x25519Ephemeral.length} ${x25519SharedSecret.length} ${pubKyberKeyBytes.length} ${kyberEphemeral.length} ${kyberSharedSecret.length} ${pubHQCkeyBytes.length} ${hqcEphemeral.length} ${hqcSharedSecret.length} 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 ჰ`), pubX25519KeyBytes, x25519Ephemeral, pubKyberKeyBytes, kyberEphemeral, pubHQCkeyBytes, hqcEphemeral),
+            concatUint8Arr(x25519SharedSecret, kyberSharedSecret, hqcSharedSecret, utf8ToBytes(`ჰM-${HM_version} ${HM_mode} ${recipientName} ${pubX25519KeyBytes.length} ${x25519Ephemeral.length} ${x25519SharedSecret.length} ${pubKyberKeyBytes.length} ${kyberEphemeral.length} ${kyberSharedSecret.length} ${pubHQCkeyBytes.length} ${hqcEphemeral.length} ${hqcSharedSecret.length} ჰ`), pubX25519KeyBytes, x25519Ephemeral, pubKyberKeyBytes, kyberEphemeral, pubHQCkeyBytes, hqcEphemeral),
             Hs,
             [24, 12, 24, 32, 32, 32],
             1000,
             true,
         );
-        wipeUint8(x25519SharedSecret, kyberSharedSecret, hqcSharedSecret);
+        wipeUint8Arr(x25519SharedSecret, kyberSharedSecret, hqcSharedSecret);
 
         let finalDecrypted;
         if (doNotUsePq) {
@@ -127,7 +128,10 @@ export async function decryptMsg(
             && finalDecrypted instanceof Uint8Array
             && finalDecrypted.length
         ) {
-            return finalDecrypted;
+            return [
+                finalDecrypted,
+                inputIsFile,
+            ];
         }
 
         return null;
