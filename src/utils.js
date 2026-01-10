@@ -1,6 +1,5 @@
 
-export function concatBytes(...arrays) {
-
+export function concatUint8Arr(...arrays) {
     if (arrays.length === 0) return new Uint8Array(0);
 
     let totalLength = 0;
@@ -19,36 +18,7 @@ export function concatBytes(...arrays) {
     return result;
 }
 
-export function compareUint8arrays(a, b) {
-
-    const lenA = a.length;
-    const lenB = b.length;
-    const minLen = lenA < lenB ? lenA : lenB;
-
-    for (let i = 0; i < minLen; i++) {
-        const diff = a[i] - b[i];
-        if (diff !== 0) return diff;
-    }
-
-    return lenA - lenB;
-}
-
-export function buildPatternArr(pattern, times) {
-
-    const plen = pattern.length;
-    const result = new Array(plen * times);
-
-    let offset = 0;
-    for (let i = 0; i < times; i++) {
-        for (let j = 0; j < plen; j++) {
-            result[offset++] = pattern[j];
-        }
-    }
-
-    return result;
-}
-
-export function wipeUint8() {
+export function wipeUint8Arr() {
     for (let i = 0; i < arguments.length; i++) {
         arguments[i].fill(0);
     }
