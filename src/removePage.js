@@ -1,5 +1,4 @@
 import dhive from "./dhive/dhive.mjs";
-
 import {
     shuffleArray,
 } from "./utils.js";
@@ -138,7 +137,7 @@ removeButton.addEventListener("click", async () => {
             {
                 account: t,
                 extensions: [],
-                json_metadata: JSON.stringify(metadata, null, 0),
+                json_metadata: JSON.stringify(metadata),
                 posting_json_metadata: "",
             },
         ];
