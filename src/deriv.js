@@ -1,237 +1,128 @@
 import {
-    concatBytes,
+    concatUint8Arr,
+    wipeUint8Arr,
     utf8ToBytes,
-    compareUint8arrays,
-    wipeUint8,
 } from "./utils.js";
 
-function hmac(
-    h,
-    msg,
+function getDerivs(
+    ikm,
     key,
-    blockLen,
+    H,
 ) {
-
-    if (key.length > blockLen) {
-        h.update(key);
-        key = h.digest("binary");
-        h.init();
-    }
-
-    const keyPadded = new Uint8Array(blockLen);
-    keyPadded.set(key.length ? key : new Uint8Array(0));
-    const ipad = new Uint8Array(blockLen);
-    const opad = new Uint8Array(blockLen);
-    for (let i = 0; i < blockLen; i++) {
-        const b = keyPadded[i];
-        ipad[i] = b ^ 0x36;
-        opad[i] = b ^ 0x5c;
-    }
-
-    h.update(ipad);
-    h.update(msg);
-    const inner = h.digest("binary");
-    h.init();
-
-    h.update(opad);
-    h.update(inner);
-    const out = h.digest("binary");
-    h.init();
-
-    return out;
+    H.update(new Uint8Array([1]));
+    H.update(ikm);
+    H.update(key);
+    const out1 = H.digest("binary");
+    H.init();
+    H.update(new Uint8Array([252]));
+    H.update(out1);
+    H.update(ikm);
+    const out2 = H.digest("binary");
+    H.init();
+    return [out1, out2];
 }
 
-function doHKDF(
-    h,
+function customKdf(
+    H,
     ikm,
-    info = new Uint8Array(0),
-    salt = undefined,
-    length = undefined,
+    outputOutline,
 ) {
+    const digestSize = H.digestSize;
+    const outLen = outputOutline.length;
+    const outputs = new Array(outLen);
 
-    const blockLen = h.blockSize;
-    const outputLen = h.digestSize;
+    const counter = new Uint8Array(4);
+    const counterView = new DataView(counter.buffer);
+    let C = 0;
 
-    if (length === undefined)
-        length = outputLen;
+    counterView.setUint32(0, C, true);
+    H.update(counter);
+    H.update(ikm);
+    let hashed = H.digest("binary");
+    H.init();
 
-    if (salt === undefined)
-        salt = new Uint8Array(blockLen);
-
-    const prk = hmac(
-        h,
+    const [deriv1, deriv2] = getDerivs(
         ikm,
-        salt,
-        blockLen,
+        hashed,
+        H,
     );
 
-    const blocks = Math.ceil(length / outputLen);
-    const okm = new Uint8Array(blocks * outputLen);
+    H.update(deriv1);
+    H.update(deriv2);
+    const derivs = H.save();
+    H.init();
 
-    let prev = new Uint8Array(0);
-    let havePrev = false;
-    const counter = new Uint8Array(1);
+    for (let i = 0; i < outLen; i++) {
+        const blocks = Math.ceil(outputOutline[i] / digestSize);
+        const okm = new Uint8Array(blocks * digestSize);
 
-    let prkKey = prk;
-    if (prkKey.length > blockLen) {
-        h.update(prkKey);
-        prkKey = h.digest("binary");
-        h.init();
+        for (let j = 0; j < blocks; j++) {
+            counterView.setUint32(0, ++C, true);
+
+            H.load(derivs);
+            H.update(counter);
+            H.update(hashed);
+            hashed = H.digest("binary");
+            H.init();
+
+            okm.set(hashed, j * digestSize);
+        }
+        outputs[i] = okm.slice(0, outputOutline[i]);
     }
 
-    const keyPadded = new Uint8Array(blockLen);
-    keyPadded.set(prkKey);
-    const ipad = new Uint8Array(blockLen);
-    const opad = new Uint8Array(blockLen);
-    for (let i = 0; i < blockLen; i++) {
-        const b = keyPadded[i];
-        ipad[i] = b ^ 0x36;
-        opad[i] = b ^ 0x5c;
+    if (outLen === 1) {
+        return outputs[0];
+    } else {
+        return outputs;
     }
+}
 
-    h.update(ipad);
-    const innerBaseState = h.save();
-    h.init();
-
-    h.update(opad);
-    const outerBaseState = h.save();
-    h.init();
-
-    for (let i = 0; i < blocks; i++) {
-        counter[0] = i + 1;
-
-        h.load(innerBaseState);
-        if (havePrev) h.update(prev);
-        if (info.length) h.update(info);
-        h.update(counter);
-        const inner = h.digest("binary");
-        h.init();
-
-        h.load(outerBaseState);
-        h.update(inner);
-        prev = h.digest("binary");
-        if (!havePrev) havePrev = true;
-        h.init();
-
-        okm.set(prev, i * outputLen);
+function spHashRound(
+    input,
+    Hs,
+    outputLength = 128,
+) {
+    const outLen = Hs.length;
+    const outArr = new Array(outLen);
+    for (let i = 0; i < outLen; i++) {
+        outArr[i] = customKdf(
+            Hs[i],
+            input,
+            [outputLength],
+        );
     }
-
-    return okm.slice(0, length);
+    return outArr;
 }
 
 export function doHashing(
     input,
     Hs,
     outputOutline = [64],
-    rounds = 5,
+    rounds = 3,
     toWipeInput = false,
 ) {
+    const counter = new Uint8Array(4);
+    const counterView = new DataView(counter.buffer);
+    let C = 1;
 
-    const iUint8 = new Uint8Array(4);
-    const iView = new DataView(iUint8.buffer);
+    counterView.setUint32(0, C, true);
+    let hashMat = concatUint8Arr(...spHashRound(
+        concatUint8Arr(counter, utf8ToBytes(`${input.length} ${rounds} ${JSON.stringify(outputOutline)}`), input),
+        Hs,
+    ));
+    if (toWipeInput) { wipeUint8Arr(input); }
 
-    let i = 1 >>> 0;
-    iView.setUint32(0, i, true);
-    const initInput = concatBytes(iUint8, utf8ToBytes(`${input.length} ${rounds} ${JSON.stringify(outputOutline)}`), input);
-    if (toWipeInput) { wipeUint8(input); }
-
-    const jUint8 = new Uint8Array(4);
-    const jView = new DataView(jUint8.buffer);
-
-    const initHashArray = [];
-    let j = 0 >>> 0;
-    for (const [, fn] of Object.entries(Hs)) {
-        j = (j + 1) >>> 0;
-        jView.setUint32(0, j, true);
-        fn.update(jUint8);
-        fn.update(initInput);
-        initHashArray.push(fn.digest("binary"));
-        fn.init();
-    }
-    wipeUint8(initInput);
-    j = 0 >>> 0;
-
-    let hashMat = concatBytes(...(initHashArray.map(u => u.reverse()).sort(compareUint8arrays).reverse())).reverse();
-
-    let salt, passwPt1, passwPt2, passwPt3;
-
-    while (i < rounds) {
-
-        i = (i + 1) >>> 0;
-        iView.setUint32(0, i, true);
-        const itInput = concatBytes(iUint8, hashMat);
-
-        const hashArray = [];
-        for (const [, fn] of Object.entries(Hs)) {
-            j = (j + 1) >>> 0;
-            jView.setUint32(0, j, true);
-            fn.update(jUint8);
-            fn.update(itInput);
-            hashArray.push(fn.digest("binary"));
-            fn.init();
-        }
-        j = 0 >>> 0;
-
-        const order1 = compareUint8arrays(hashArray[1], hashArray[2]);
-        const order2 = compareUint8arrays(hashArray[0], hashArray[3]);
-        const order3 = compareUint8arrays(hashArray[4], hashArray[5]);
-
-        if (order1 < 0) {
-            if (order2 < 0) {
-                if (order3 < 0) {
-                    hashMat = concatBytes(...(hashArray.map(u => u.reverse()).sort(compareUint8arrays).reverse())).reverse();
-                } else {
-                    hashMat = concatBytes(...(hashArray.map(u => u.reverse()).sort(compareUint8arrays))).reverse();
-                }
-            } else {
-                if (order3 < 0) {
-                    hashMat = concatBytes(...(hashArray.map(u => u.reverse()).sort(compareUint8arrays).reverse()));
-                } else {
-                    hashMat = concatBytes(...(hashArray.map(u => u.reverse()).sort(compareUint8arrays)));
-                }
-            }
-        } else {
-            if (order2 < 0) {
-                if (order3 < 0) {
-                    hashMat = concatBytes(...(hashArray.sort(compareUint8arrays).reverse())).reverse();
-                } else {
-                    hashMat = concatBytes(...(hashArray.sort(compareUint8arrays))).reverse();
-                }
-            } else {
-                if (order3 < 0) {
-                    hashMat = concatBytes(...(hashArray.sort(compareUint8arrays).reverse()));
-                } else {
-                    hashMat = concatBytes(...(hashArray.sort(compareUint8arrays)));
-                }
-            }
-        }
-
-        if (i === rounds - 3) { salt = hashMat.slice(100, 172); }
-        else if (i === rounds - 2) { passwPt1 = hashMat; }
-        else if (i === rounds - 1) { passwPt2 = hashMat; }
-        else if (i === rounds) { passwPt3 = hashMat; }
-    }
-
-    const passw = concatBytes(passwPt3, passwPt2, passwPt1);
-
-    const outputs = [];
-    i = 0 >>> 0;
-    for (const elementLength of outputOutline) {
-
-        i = (i + 1) >>> 0;
-        iView.setUint32(0, i, true);
-        outputs.push(doHKDF(
-            Hs.sha3,
-            passw,
-            iUint8,
-            salt,
-            elementLength,
+    while (C < rounds) {
+        counterView.setUint32(0, ++C, true);
+        hashMat = concatUint8Arr(...spHashRound(
+            concatUint8Arr(counter, hashMat),
+            Hs,
         ));
     }
 
-    if (outputs.length === 1) {
-        return outputs[0];
-    } else {
-        return outputs;
-    }
+    return customKdf(
+        Hs[0],
+        hashMat,
+        outputOutline,
+    );
 }
