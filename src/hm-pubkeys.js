@@ -1,15 +1,14 @@
 import dhive from "./dhive/dhive.mjs";
-
 import {
-    encodeBase91,
-    decodeBase91,
-} from "./base91.js";
+    encodeBase64,
+    decodeBase64,
+} from "./base64.js";
 import {
     shuffleArray,
 } from "./utils.js";
 import { valStringCharSet } from "./val.js";
 import {
-    customBase91CharSet,
+    urlSafeBase64CharSet,
 } from "./charsets.js";
 import {
     valHMpubKey,
@@ -20,61 +19,66 @@ export async function checkPubKeyOnchain(
     pubHMkey,
     RPCs,
 ) {
-
     try {
-
-        const stringPubHMkey = encodeBase91(pubHMkey);
-
         const [accountData] = await new dhive.Client(shuffleArray(RPCs)).database.getAccounts([accountName]);
+        if (
+            !accountData
+            || typeof accountData !== "object"
+            || Array.isArray(accountData)
+        ) { throw new Error(`Account "${accountName}" not found, or invalid data retrieved.`); }
 
-        if (!accountData) {
-            throw new Error(`Account "${accountName}" not found.`);
-        }
-
-        let metadata = {};
-        let invalidMetadata = false;
-
+        const stringPubHMkey = encodeBase64(pubHMkey, true);
+        let metadata = {}, updateNeeded = false;
         if (!accountData.json_metadata) {
-            metadata["ჰM0"] = "";
-            invalidMetadata = true;
+            metadata["ჰM"] = [1, stringPubHMkey];
+            updateNeeded = true;
         }
 
-        if (!invalidMetadata) {
+        if (!updateNeeded) {
             try {
                 metadata = JSON.parse(accountData.json_metadata);
-
             } catch (err) {
                 metadata = {};
-                metadata["ჰM0"] = "";
-                invalidMetadata = true;
+                metadata["ჰM"] = [1, stringPubHMkey];
+                updateNeeded = true;
             }
         }
 
         if (
-            !invalidMetadata &&
-            (!metadata || typeof metadata !== "object" || Array.isArray(metadata))
+            !updateNeeded
+            && (!metadata || typeof metadata !== "object" || Array.isArray(metadata))
         ) {
             metadata = {};
-            metadata["ჰM0"] = "";
-            invalidMetadata = true;
+            metadata["ჰM"] = [1, stringPubHMkey];
+            updateNeeded = true;
         }
 
         if (
-            !invalidMetadata &&
-            (typeof metadata["ჰM0"] !== "string")
+            !updateNeeded
+            && (!Array.isArray(metadata["ჰM"]) || metadata["ჰM"].length !== 2)
         ) {
-            metadata["ჰM0"] = "";
-            invalidMetadata = true;
+            metadata["ჰM"] = [1, stringPubHMkey];
+            updateNeeded = true;
         }
 
-        let updateNeeded = false;
+        if (
+            !updateNeeded
+            && metadata["ჰM"][0] !== 1
+        ) {
+            metadata["ჰM"] = [1, stringPubHMkey];
+            updateNeeded = true;
+        }
 
-        if (metadata["ჰM0"] !== stringPubHMkey) {
-            metadata["ჰM0"] = stringPubHMkey;
+        if (
+            !updateNeeded
+            && metadata["ჰM"][1] !== stringPubHMkey
+        ) {
+            metadata["ჰM"] = [1, stringPubHMkey];
             updateNeeded = true;
         }
 
         if (updateNeeded) {
+            delete metadata["ჰM0"];
             return metadata;
 
         } else {
@@ -97,39 +101,30 @@ export async function fetchPubKey(
     accountName,
     RPCs,
 ) {
-
     try {
-
         const [accountData] = await new dhive.Client(shuffleArray(RPCs)).database.getAccounts([accountName]);
-
         if (
             !accountData
             || typeof accountData !== "object"
             || Array.isArray(accountData)
-        ) {
-            throw new Error(`Account "${accountName}" not found, or invalid data retrieved.`);
-        }
+        ) { throw new Error(`Account "${accountName}" not found, or invalid data retrieved.`); }
 
-        let metadata = null;
+        let metadata;
         try {
             metadata = JSON.parse(accountData.json_metadata);
         } catch (err) {
-
             metadata = null;
         }
 
-        const hasKeys = (
+        if (
             metadata
             && typeof metadata === "object"
             && !Array.isArray(metadata)
-            && valStringCharSet(metadata?.["ჰM0"], customBase91CharSet)
-            && valHMpubKey(decodeBase91(metadata?.["ჰM0"]))
-        );
-
-        if (hasKeys) {
-            return decodeBase91(metadata["ჰM0"]);
-
-        } else {
+            && metadata?.["ჰM"]?.[0] === 1
+            && valStringCharSet(metadata?.["ჰM"]?.[1], urlSafeBase64CharSet)
+            && valHMpubKey(decodeBase64(metadata?.["ჰM"]?.[1]))
+        ) { return decodeBase64(metadata["ჰM"][1]); }
+        else {
             console.warn(`
     Account ${accountName} does not have the required Hive-Mail public key registered.
             `);
@@ -149,15 +144,17 @@ export async function checkForRemoval(
     accountName,
     RPCs,
 ) {
-
     const [accountData] = await new dhive.Client(shuffleArray(RPCs)).database.getAccounts([accountName]);
-
-    if (!accountData) {
-        console.error(`Account "${accountName}" not found.`);
+    if (
+        !accountData
+        || typeof accountData !== "object"
+        || Array.isArray(accountData)
+    ) {
+        console.error(`Account "${accountName}" not found, or invalid data retrieved.`);
         return false;
     }
 
-    let metadata = {};
+    let metadata;
     try {
         metadata = JSON.parse(accountData.json_metadata);
     } catch (err) {
@@ -169,11 +166,9 @@ export async function checkForRemoval(
         !metadata
         || typeof metadata !== "object"
         || Array.isArray(metadata)
-    ) {
-        return false;
-    }
+    ) { return false; }
 
-    if (Object.keys(metadata).some(k => /^ჰM\d+$/.test(k))) {
+    if (Object.keys(metadata).some(k => /^ჰM\d*$/.test(k))) {
         return true;
     } else {
         return false;
@@ -184,14 +179,14 @@ export async function removeHMitems(
     accountName,
     RPCs,
 ) {
-
     const [accountData] = await new dhive.Client(shuffleArray(RPCs)).database.getAccounts([accountName]);
+    if (
+        !accountData
+        || typeof accountData !== "object"
+        || Array.isArray(accountData)
+    ) { throw new Error(`Account "${accountName}" not found, or invalid data retrieved.`); }
 
-    if (!accountData) {
-        throw new Error(`Account "${accountName}" not found.`);
-    }
-
-    let metadata = {};
+    let metadata;
     try {
         metadata = JSON.parse(accountData.json_metadata);
     } catch (err) {
@@ -202,12 +197,10 @@ export async function removeHMitems(
         !metadata
         || typeof metadata !== "object"
         || Array.isArray(metadata)
-    ) {
-        throw new Error(`The metadata retrieved from account ${accountName} is not an object!`);
-    }
+    ) { throw new Error(`The metadata retrieved from account ${accountName} is not an object!`); }
 
     for (const key of Object.keys(metadata)) {
-        if (/^ჰM\d+$/.test(key)) delete metadata[key];
+        if (/^ჰM\d*$/.test(key)) delete metadata[key];
     }
 
     return metadata;
