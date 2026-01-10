@@ -3,8 +3,6 @@ import {
     createSHA3,
     createWhirlpool,
     createBLAKE2b,
-    createBLAKE3,
-    createSM3,
 } from "./hash-wasm/hash-wasm.mjs";
 import {
     utf8ToBytes,
@@ -38,14 +36,13 @@ if (!testedRPCs || !testedRPCs.length) {
     resultMessage.style.color = "red";
 }
 
-const Hs = {
-    sha2: await createSHA512(),
-    sha3: await createSHA3(),
-    whirlpool: await createWhirlpool(),
-    blake2: await createBLAKE2b(),
-    blake3: await createBLAKE3(),
-    sm3: await createSM3(),
-};
+const Hs = [
+    await createSHA3(),
+    await createBLAKE2b(),
+    await createSHA512(),
+    await createWhirlpool(),
+
+];
 
 const addresseeInput = document.getElementById("addresseeEnc");
 const plaintextInput = document.getElementById("plaintextEnc");
@@ -116,46 +113,22 @@ encryptButton.addEventListener("click", async () => {
     if (recipientPubHMkey && recipientPubHMkey instanceof Uint8Array && recipientPubHMkey.length) {
 
         const plaintext = plaintextInput.value.trim();
-        let plaintextBytes, fileEncInput = false;
-        if (
-            plaintext.startsWith(`"F"`)
-            && plaintext.endsWith(`"`)
-            && valStringCharSet(plaintext.slice(3, -1), customBase91CharSet)
-        ) {
-            plaintextBytes = decodeBase91(plaintext.slice(3, -1));
-            fileEncInput = true;
-        } else {
-            plaintextBytes = utf8ToBytes(plaintext);
-        }
 
         const toUsePq = usePQ.checked;
 
-        const payload = await encryptMsg(
-            plaintextBytes,
+        const msgStr = `"` + encodeBase91(await encryptMsg(
+            utf8ToBytes(plaintext),
             addressee,
             recipientPubHMkey,
             Hs,
             toUsePq ? false : true,
-        );
 
-        let msgStr;
-        if (fileEncInput) {
-            if (toUsePq) {
-                msgStr = `"0MF"${encodeBase91(payload)}"`;
-            } else {
-                msgStr = `"0mF"${encodeBase91(payload)}"`;
-            }
-        } else {
-            if (toUsePq) {
-                msgStr = `"0M"${encodeBase91(payload)}"`;
-            } else {
-                msgStr = `"0m"${encodeBase91(payload)}"`;
-            }
-        }
+        )) + `"`;
 
         if (
             typeof msgStr === "string"
             && msgStr.trim()
+            && valStringCharSet(msgStr.slice(1, -1), customBase91CharSet)
         ) {
 
         resultMessage.textContent = `Message successfully encrypted!`;
