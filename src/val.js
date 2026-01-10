@@ -3,20 +3,18 @@ export function valStringCharSet(
     input,
     charSet,
 ) {
-
     if (
-        [input, charSet].some(v => typeof v !== "string" || !v.trim())
-    ) {
-
-        return false;
-    }
+        typeof input !== "string"
+        || !input.trim()
+        || typeof charSet !== "string"
+        || !charSet.trim()
+    ) { return false; }
 
     const allowed = new Set(charSet);
 
-    for (const char of input) {
-        if (!allowed.has(char)) {
-            return false;
-        }
+    const len = input.length;
+    for (let i = 0; i < len; i++) {
+        if (!allowed.has(input[i])) { return false; }
     }
 
     return true;
