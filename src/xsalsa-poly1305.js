@@ -5,9 +5,7 @@ export function encryptXSalsaPoly1305(
     key,
     nonce,
 ) {
-
     const cipher = xsalsa20poly1305(key, nonce);
-
     return cipher.encrypt(plaintext);
 }
 
@@ -16,8 +14,6 @@ export function decryptXSalsaPoly1305(
     key,
     nonce,
 ) {
-
     const cipher = xsalsa20poly1305(key, nonce);
-
     return cipher.decrypt(ciphertext);
 }
