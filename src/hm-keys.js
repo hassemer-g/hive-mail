@@ -1,5 +1,5 @@
 import {
-    concatBytes,
+    concatUint8Arr,
 } from "./utils.js";
 import {
     createX25519KeyPair,
@@ -26,8 +26,8 @@ export async function createHMkeyPair() {
     const { privKey: privKyberKey, pubKey: pubKyberKey } = await createPQkeyPair("ml-kem-1024");
     const { privKey: privHQCkey, pubKey: pubHQCkey } = await createPQkeyPair("hqc-256");
 
-    const privKey = concatBytes(privX25519Key, privKyberKey, privHQCkey);
-    const pubKey = concatBytes(pubX25519Key, pubKyberKey, pubHQCkey);
+    const privKey = concatUint8Arr(privX25519Key, privKyberKey, privHQCkey);
+    const pubKey = concatUint8Arr(pubX25519Key, pubKyberKey, pubHQCkey);
 
     return { privKey, pubKey };
 }
