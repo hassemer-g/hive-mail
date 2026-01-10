@@ -5,9 +5,7 @@ export function encryptAesGcmSiv(
     key,
     nonce,
 ) {
-
     const cipher = gcmsiv(key, nonce);
-
     return cipher.encrypt(plaintext);
 }
 
@@ -16,8 +14,6 @@ export function decryptAesGcmSiv(
     key,
     nonce,
 ) {
-
     const cipher = gcmsiv(key, nonce);
-
     return cipher.decrypt(ciphertext);
 }
