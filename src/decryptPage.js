@@ -3,8 +3,6 @@ import {
     createSHA3,
     createWhirlpool,
     createBLAKE2b,
-    createBLAKE3,
-    createSM3,
 } from "./hash-wasm/hash-wasm.mjs";
 import {
     bytesToUtf8,
@@ -26,14 +24,12 @@ import {
     decryptMsg,
 } from "./hm-decrypt.js";
 
-const Hs = {
-    sha2: await createSHA512(),
-    sha3: await createSHA3(),
-    whirlpool: await createWhirlpool(),
-    blake2: await createBLAKE2b(),
-    blake3: await createBLAKE3(),
-    sm3: await createSM3(),
-};
+const Hs = [
+    await createSHA3(),
+    await createBLAKE2b(),
+    await createSHA512(),
+    await createWhirlpool(),
+];
 
 const addresseeDecInput = document.getElementById("addresseeDec");
 const ciphertextDecInput = document.getElementById("ciphertextDec");
@@ -46,7 +42,7 @@ let DECRYPTED_MSG = null;
 
 function valCiphertext(input) {
     if (typeof input !== "string") return false;
-    return input.startsWith(`"`) && input.endsWith(`"`) && input.length > 60;
+    return input.startsWith(`"`) && input.endsWith(`"`) && input.length > 66;
 }
 
 function valPriv(input) {
@@ -92,45 +88,14 @@ privKeyDecInput.addEventListener("input", valDecryptButton);
 
 decryptButton.addEventListener("click", async () => {
 
-    const msgStr = ciphertextDecInput.value.trim();
-
-    let payloadStr, doNotUsePq = false, usedFileEnc = false;
-    if (msgStr.endsWith(`"`)) {
-        if (msgStr.startsWith(`"0M"`)) {
-            payloadStr = msgStr.slice(4, -1);
-        } else if (msgStr.startsWith(`"0m"`)) {
-            doNotUsePq = true;
-            payloadStr = msgStr.slice(4, -1);
-        } else if (msgStr.startsWith(`"0MF"`)) {
-            usedFileEnc = true;
-            payloadStr = msgStr.slice(5, -1);
-        } else if (msgStr.startsWith(`"0mF"`)) {
-            doNotUsePq = true;
-            usedFileEnc = true;
-            payloadStr = msgStr.slice(5, -1);
-        } else {
-            resultMessageDec.textContent = `Invalid ciphertext input!`;
-            resultMessageDec.style.color = "red";
-            privKeyDecInput.value = "";
-            privKeyDecInput.style.borderColor = "";
-            decryptButton.disabled = true;
-            decryptButton.style.backgroundColor = "";
-            return;
-        }
-    } else {
-        resultMessageDec.textContent = `Invalid ciphertext input!`;
-        resultMessageDec.style.color = "red";
-        privKeyDecInput.value = "";
-        privKeyDecInput.style.borderColor = "";
-        decryptButton.disabled = true;
-        decryptButton.style.backgroundColor = "";
-        return;
-    }
+    const payloadStr = ciphertextDecInput.value.trim();
 
     if (
-        !valStringCharSet(payloadStr, customBase91CharSet)
+        !payloadStr.startsWith(`"`)
+        || !payloadStr.endsWith(`"`)
+        || !valStringCharSet(payloadStr.slice(1, -1), customBase91CharSet)
     ) {
-        resultMessageDec.textContent = `Invalid ciphertext input! Payload is not Base91 encoded.`;
+        resultMessageDec.textContent = `Invalid ciphertext input!`;
         resultMessageDec.style.color = "red";
         privKeyDecInput.value = "";
         privKeyDecInput.style.borderColor = "";
@@ -141,20 +106,16 @@ decryptButton.addEventListener("click", async () => {
 
     try {
 
-        const decrypted = await decryptMsg(
+        const [decrypted, inputIsFile] = await decryptMsg(
             addresseeDecInput.value.trim(),
             decodeBase91(privKeyDecInput.value.trim().slice(1, -1)),
-            decodeBase91(payloadStr),
+            decodeBase91(payloadStr.slice(1, -1)),
             Hs,
-            doNotUsePq,
+
         );
 
         let decryptedStr;
-        if (usedFileEnc) {
-            decryptedStr = `"F"${encodeBase91(decrypted)}"`;
-        } else {
-            decryptedStr = bytesToUtf8(decrypted);
-        }
+        if (!inputIsFile) { decryptedStr = bytesToUtf8(decrypted); }
 
         if (
             decryptedStr
@@ -184,7 +145,7 @@ decryptButton.addEventListener("click", async () => {
 
     } catch (err) {
         DECRYPTED_MSG = null;
-        resultMessageDec.textContent = `Failed to decrypt message! Error: ${err.message}`;
+        resultMessageDec.textContent = `Failed to decrypt message!`;
         resultMessageDec.style.color = "red";
         privKeyDecInput.value = "";
         privKeyDecInput.style.borderColor = "";
