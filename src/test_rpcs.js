@@ -1,5 +1,4 @@
 import dhive from "./dhive/dhive.mjs";
-
 import { shuffleArray } from "./utils.js";
 
 export async function testRPCsWithDhive(
@@ -28,7 +27,6 @@ export async function testRPCsWithDhive(
     };
 
     const results = await Promise.all(RPCs.map(testRPC));
-
     const responsive = results.filter(Boolean);
     return shuffleNeeded ? shuffleArray(responsive) : responsive;
 }
