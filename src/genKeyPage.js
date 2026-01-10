@@ -1,14 +1,17 @@
 import dhive from "./dhive/dhive.mjs";
-
 import {
     shuffleArray,
 } from "./utils.js";
+import {
+    decodeBase64,
+} from "./base64.js";
 import {
     encodeBase91,
     decodeBase91,
 } from "./base91.js";
 import { valStringCharSet } from "./val.js";
 import {
+    urlSafeBase64CharSet,
     customBase91CharSet,
 } from "./charsets.js";
 import { RPCsArray } from "./rpcs.js";
@@ -120,7 +123,7 @@ genButton.addEventListener("click", async () => {
 
     resultMessage2.textContent = `New Hive-Mail private key (save it somewhere safe):
 
-${encodeBase91(privHMkey).slice(0, 8)}...`;
+${encodeBase91(privHMkey).slice(0, 32)}...`;
 
     broadcastButton.disabled = true;
     broadcastButton.style.backgroundColor = "";
@@ -150,11 +153,9 @@ copyButtonGen.addEventListener("click", () => {
 confirmSavedKey.addEventListener("change", () => {
     PRIVKEYTOCOPY = null;
     if (confirmSavedKey.checked) {
-
-        for (let i = 1; !(i > 100); i++) {
+        for (let i = 0; i < 100; i++) {
             navigator.clipboard.writeText(`Clipboard overwritten! ${i}`);
         }
-
         keychainContainer.classList.add("visible");
         privActiveKeyContainer.classList.add("visible");
     } else {
@@ -213,18 +214,16 @@ broadcastButton.addEventListener("click", async () => {
         if (
             typeof metadata !== "object"
             || Array.isArray(metadata)
-            || !valStringCharSet(metadata?.["ჰM0"], customBase91CharSet)
-            || !valHMpubKey(decodeBase91(metadata?.["ჰM0"]))
-        ) {
-            throw new Error(`Invalid metadata received from the "checkPubKeyOnchain" function!`);
-        }
+            || !valStringCharSet(metadata?.["ჰM"]?.[1], urlSafeBase64CharSet)
+            || !valHMpubKey(decodeBase64(metadata?.["ჰM"]?.[1]))
+        ) { throw new Error(`Invalid metadata received from the "checkPubKeyOnchain" function!`); }
 
         const op = [
             "account_update2",
             {
                 account: t,
                 extensions: [],
-                json_metadata: JSON.stringify(metadata, null, 0),
+                json_metadata: JSON.stringify(metadata),
                 posting_json_metadata: "",
             },
         ];
