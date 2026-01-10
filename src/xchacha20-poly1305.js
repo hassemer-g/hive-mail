@@ -5,9 +5,7 @@ export function encryptXChaCha20Poly1305(
     key,
     nonce,
 ) {
-
     const cipher = xchacha20poly1305(key, nonce);
-
     return cipher.encrypt(plaintext);
 }
 
@@ -16,8 +14,6 @@ export function decryptXChaCha20Poly1305(
     key,
     nonce,
 ) {
-
     const cipher = xchacha20poly1305(key, nonce);
-
     return cipher.decrypt(ciphertext);
 }
