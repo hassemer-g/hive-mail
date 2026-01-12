@@ -118,9 +118,9 @@ checkButton.addEventListener("click", async () => {
 
 genButton.addEventListener("click", async () => {
     const { privKey: privHMkey, pubKey: pubHMkey } = await createHMkeyPair();
-    resultMessage2.textContent = `New Hive-Mail private key (save it somewhere safe):
+    resultMessage2.textContent = `New Hive-Mail private key successfully created; store it safely!
 
-${encodeBase91(privHMkey).slice(0, 32)}...`;
+The new Key starts with: "${encodeBase91(privHMkey).slice(0, 16)} ...`;
 
     broadcastButton.disabled = true;
     broadcastButton.style.backgroundColor = "";
@@ -149,6 +149,10 @@ copyButtonGen.addEventListener("click", () => {
 
 confirmSavedKey.addEventListener("change", () => {
     PRIVKEYTOCOPY = null;
+    resultMsg2Cont.classList.remove("visible");
+    copyButtonGen.disabled = true;
+    copyButtonGen.style.backgroundColor = "";
+    resultMessage2.textContent = "";
     if (confirmSavedKey.checked) {
         for (let i = 0; i < 100; i++) {
             navigator.clipboard.writeText(`Clipboard overwritten! ${i}`);
@@ -222,7 +226,6 @@ broadcastButton.addEventListener("click", async () => {
     );
 
     if (metadata) {
-
         if (
             typeof metadata !== "object"
             || Array.isArray(metadata)
@@ -241,7 +244,6 @@ broadcastButton.addEventListener("click", async () => {
         ];
 
         try {
-
             if (useHiveKeychain.checked) {
                 if (window.hive_keychain) {
                     window.hive_keychain.requestBroadcast(t, [op], "Active", function(result) {
@@ -249,26 +251,66 @@ broadcastButton.addEventListener("click", async () => {
                             resultMessage3.textContent = `Transaction successfully broadcast!
 Transaction ID: ${result?.result?.id}`;
                             resultMessage3.style.color = "green";
+                            accountNameInput.value = "";
+                            accountNameInput.style.borderColor = "";
+                            checkButton.disabled = true;
+                            checkButton.style.backgroundColor = "";
+                            genButton.disabled = true;
+                            genButton.style.backgroundColor = "";
+                            copyButtonGen.disabled = true;
+                            copyButtonGen.style.backgroundColor = "";
+                            broadcastButton.disabled = true;
+                            broadcastButton.style.backgroundColor = "";
+                            confirmSavedKey.checked = false;
+                            useHiveKeychain.checked = false;
+                            resultMsg2Cont.classList.remove("visible");
+                            confirmCheckboxContainer.classList.remove("visible");
+                            keychainContainer.classList.remove("visible");
+                            privActiveKeyContainer.classList.remove("visible");
+                            PRIVKEYTOCOPY = null;
+                            PUBKEYTOBROADCAST = null;
+                            
                         } else {
                             resultMessage3.textContent = "Error broadcasting transaction: " + result.message;
                             resultMessage3.style.color = "red";
                         }
                     });
+                    
                 } else {
                     resultMessage3.textContent = "You need to install Hive Keychain to sign the transaction.";
                     resultMessage3.style.color = "red";
                 }
+                
             } else {
-
                 const result2 = await new dhive.Client(shuffleArray(testedRPCs)).broadcast.sendOperations([op], dhive.PrivateKey.fromString(privKey));
                 resultMessage3.textContent = `Transaction successfully broadcast!
 Transaction ID: ${result2?.id}`;
                 resultMessage3.style.color = "green";
+                accountNameInput.value = "";
+                accountNameInput.style.borderColor = "";
+                checkButton.disabled = true;
+                checkButton.style.backgroundColor = "";
+                genButton.disabled = true;
+                genButton.style.backgroundColor = "";
+                copyButtonGen.disabled = true;
+                copyButtonGen.style.backgroundColor = "";
+                broadcastButton.disabled = true;
+                broadcastButton.style.backgroundColor = "";
+                confirmSavedKey.checked = false;
+                useHiveKeychain.checked = false;
+                resultMsg2Cont.classList.remove("visible");
+                confirmCheckboxContainer.classList.remove("visible");
+                keychainContainer.classList.remove("visible");
+                privActiveKeyContainer.classList.remove("visible");
+                PRIVKEYTOCOPY = null;
+                PUBKEYTOBROADCAST = null;
             }
+            
         } catch (err) {
             resultMessage3.textContent = "Error broadcasting transaction: " + err.message;
             resultMessage3.style.color = "red";
         }
+        
     } else {
         resultMessage3.textContent = `Failed to save onchain the new Hive-Mail public key!`;
         resultMessage3.style.color = "red";
