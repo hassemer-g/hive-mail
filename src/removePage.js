@@ -165,23 +165,44 @@ removeButton.addEventListener("click", async () => {
                             resultMessage2.textContent = `Success in removing all Hive-Mail elements from the metadata of account ${t}
 Transaction ID: ${result?.result?.id}`;
                             resultMessage2.style.color = "green";
+                            accountNameInput.value = "";
+                            accountNameInput.style.borderColor = "";
+                            checkButton.disabled = true;
+                            checkButton.style.backgroundColor = "";
+                            removeButton.disabled = true;
+                            removeButton.style.backgroundColor = "";
+                            useHiveKeychain.checked = false;
+                            keychainContainer.classList.remove("visible");
+                            privActiveKeyContainer.classList.remove("visible");
+                            
                         } else {
                             resultMessage2.textContent = `Failed to remove the Hive-Mail elements from the metadata of account ${t}
 Error message: ${result?.message}`;
                             resultMessage2.style.color = "red";
                         }
                     });
+                    
                 } else {
                     resultMessage2.textContent = "You need to install Hive Keychain to sign the transaction.";
                     resultMessage2.style.color = "red";
                 }
+                
             } else {
-
                 const result2 = await new dhive.Client(shuffleArray(testedRPCs)).broadcast.sendOperations([op], dhive.PrivateKey.fromString(privKey));
                 resultMessage2.textContent = `Success in removing all Hive-Mail elements from the metadata of account ${t}
 Transaction ID: ${result2?.id}`;
                 resultMessage2.style.color = "green";
+                accountNameInput.value = "";
+                accountNameInput.style.borderColor = "";
+                checkButton.disabled = true;
+                checkButton.style.backgroundColor = "";
+                removeButton.disabled = true;
+                removeButton.style.backgroundColor = "";
+                useHiveKeychain.checked = false;
+                keychainContainer.classList.remove("visible");
+                privActiveKeyContainer.classList.remove("visible");
             }
+            
         } catch (err) {
             resultMessage2.textContent = `Failed to remove the Hive-Mail elements from the metadata of account ${t}
 Error message: ${err.message}`;
