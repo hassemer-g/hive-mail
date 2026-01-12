@@ -78,7 +78,6 @@ export async function checkPubKeyOnchain(
         }
 
         if (updateNeeded) {
-            delete metadata["ჰM0"];
             return metadata;
 
         } else {
