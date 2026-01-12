@@ -83,6 +83,7 @@ function valCheckButton() {
         confirmCheckboxContainer.classList.remove("visible");
         keychainContainer.classList.remove("visible");
         privActiveKeyContainer.classList.remove("visible");
+        
         PRIVKEYTOCOPY = null;
         PUBKEYTOBROADCAST = null;
     }
