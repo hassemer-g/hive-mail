@@ -7,7 +7,6 @@ import {
 } from "./base64.js";
 import {
     encodeBase91,
-    decodeBase91,
 } from "./base91.js";
 import { valStringCharSet } from "./val.js";
 import {
