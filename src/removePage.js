@@ -18,7 +18,7 @@ const testedRPCs = await testRPCsWithDhive(RPCsArray);
 const resultMessage1 = document.getElementById("resultMessage1Rem");
 
 if (!testedRPCs || !testedRPCs.length) {
-    resultMessage1.textContent = `All Hive RPCs are unresponsive! Try again later...`;
+    resultMessage1.textContent = `Hive RPCs unresponsive! Try again later...`;
     resultMessage1.style.color = "red";
 }
 
@@ -171,6 +171,7 @@ Transaction ID: ${result?.result?.id}`;
                             checkButton.style.backgroundColor = "";
                             removeButton.disabled = true;
                             removeButton.style.backgroundColor = "";
+                            resultMessage1.textContent = "";
                             useHiveKeychain.checked = false;
                             keychainContainer.classList.remove("visible");
                             privActiveKeyContainer.classList.remove("visible");
@@ -198,6 +199,7 @@ Transaction ID: ${result2?.id}`;
                 checkButton.style.backgroundColor = "";
                 removeButton.disabled = true;
                 removeButton.style.backgroundColor = "";
+                resultMessage1.textContent = "";
                 useHiveKeychain.checked = false;
                 keychainContainer.classList.remove("visible");
                 privActiveKeyContainer.classList.remove("visible");
