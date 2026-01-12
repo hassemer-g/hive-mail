@@ -57,7 +57,6 @@ let PRIVKEYTOCOPY = null;
 let PUBKEYTOBROADCAST = null;
 
 function valCheckButton() {
-
     if (
         valAccountNameStructure(accountNameInput.value.trim())
         && testedRPCs.length
@@ -97,7 +96,6 @@ accountNameInput.addEventListener("input", () => {
 accountNameInput.addEventListener("input", valCheckButton);
 
 checkButton.addEventListener("click", async () => {
-
     const t = accountNameInput.value.trim();
 
     const userPubHMkey = await fetchPubKey(
@@ -118,9 +116,7 @@ checkButton.addEventListener("click", async () => {
 });
 
 genButton.addEventListener("click", async () => {
-
     const { privKey: privHMkey, pubKey: pubHMkey } = await createHMkeyPair();
-
     resultMessage2.textContent = `New Hive-Mail private key (save it somewhere safe):
 
 ${encodeBase91(privHMkey).slice(0, 32)}...`;
@@ -200,8 +196,20 @@ confirmSavedKey.addEventListener("change", confirmationCheckboxFn);
 privActiveKeyInput.addEventListener("input", confirmationCheckboxFn);
 
 broadcastButton.addEventListener("click", async () => {
+    const privKey = privActiveKeyInput.value.trim();
 
-    const t = accountNameInput.value.trim();
+    privActiveKeyInput.value = "";
+    privActiveKeyInput.style.borderColor = "";
+
+    const t = accountNameInput.value.trim()
+    .then(() => {
+        broadcastButton.disabled = true;
+        broadcastButton.textContent = `Broadcasting operation to Hive...`;
+        setTimeout(() => {
+            broadcastButton.textContent = `Save Onchain the New Public Key`;
+            broadcastButton.disabled = false;
+        }, 5000);
+    });
 
     const metadata = await checkPubKeyOnchain(
         t,
@@ -248,7 +256,7 @@ Transaction ID: ${result?.result?.id}`;
                 }
             } else {
 
-                const result2 = await new dhive.Client(shuffleArray(testedRPCs)).broadcast.sendOperations([op], dhive.PrivateKey.fromString(privActiveKeyInput.value.trim()));
+                const result2 = await new dhive.Client(shuffleArray(testedRPCs)).broadcast.sendOperations([op], dhive.PrivateKey.fromString(privKey));
                 resultMessage3.textContent = `Transaction successfully broadcast!
 Transaction ID: ${result2?.id}`;
                 resultMessage3.style.color = "green";
