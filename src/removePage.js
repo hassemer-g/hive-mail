@@ -62,7 +62,6 @@ accountNameInput.addEventListener("input", () => {
 accountNameInput.addEventListener("input", valCheckButton);
 
 checkButton.addEventListener("click", async () => {
-
     const t = accountNameInput.value.trim();
 
     const canBeCleaned = await checkForRemoval(
@@ -115,8 +114,20 @@ useHiveKeychain.addEventListener("change", valRemoveButton);
 privActiveKeyInput.addEventListener("input", valRemoveButton);
 
 removeButton.addEventListener("click", async () => {
+    const privKey = privActiveKeyInput.value.trim();
 
-    const t = accountNameInput.value.trim();
+    privActiveKeyInput.value = "";
+    privActiveKeyInput.style.borderColor = "";
+
+    const t = accountNameInput.value.trim()
+    .then(() => {
+        removeButton.disabled = true;
+        removeButton.textContent = `Broadcasting operation to Hive...`;
+        setTimeout(() => {
+            removeButton.textContent = `Remove Hive-Mail Key`;
+            removeButton.disabled = false;
+        }, 5000);
+    });
 
     const metadata = await removeHMitems(
         t,
@@ -163,7 +174,7 @@ Error message: ${result?.message}`;
                 }
             } else {
 
-                const result2 = await new dhive.Client(shuffleArray(testedRPCs)).broadcast.sendOperations([op], dhive.PrivateKey.fromString(privActiveKeyInput.value.trim()));
+                const result2 = await new dhive.Client(shuffleArray(testedRPCs)).broadcast.sendOperations([op], dhive.PrivateKey.fromString(privKey));
                 resultMessage2.textContent = `Success in removing all Hive-Mail elements from the metadata of account ${t}
 Transaction ID: ${result2?.id}`;
                 resultMessage2.style.color = "green";
