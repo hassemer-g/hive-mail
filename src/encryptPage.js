@@ -94,7 +94,6 @@ usePQ.addEventListener("change", () => {
 });
 
 encryptButton.addEventListener("click", async () => {
-
     const addressee = addresseeInput.value.trim();
 
     let recipientPubHMkey;
