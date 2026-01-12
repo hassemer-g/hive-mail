@@ -122,10 +122,14 @@ removeButton.addEventListener("click", async () => {
     const t = accountNameInput.value.trim();
 
     removeButton.disabled = true;
+    removeButton.style.backgroundColor = "";
     removeButton.textContent = `Broadcasting operation to Hive...`;
     setTimeout(() => {
         removeButton.textContent = `Remove Hive-Mail Key`;
-        removeButton.disabled = false;
+        if (useHiveKeychain.checked) {
+            removeButton.disabled = false;
+            removeButton.style.backgroundColor = "red";
+        }
     }, 5000);
 
     const metadata = await removeHMitems(
