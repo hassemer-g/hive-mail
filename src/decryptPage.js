@@ -106,7 +106,7 @@ decryptButton.addEventListener("click", async () => {
 
         const [decrypted, inputIsFile] = await decryptMsg(
             addresseeDecInput.value.trim(),
-            decodeBase91(privKey).slice(1, -1),
+            decodeBase91(privKey.slice(1, -1)),
             decodeBase91(payloadStr.slice(1, -1)),
             Hs,
         );
