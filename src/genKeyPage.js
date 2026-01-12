@@ -205,10 +205,14 @@ broadcastButton.addEventListener("click", async () => {
     const t = accountNameInput.value.trim();
 
     broadcastButton.disabled = true;
+    broadcastButton.style.backgroundColor = "";
     broadcastButton.textContent = `Broadcasting operation to Hive...`;
     setTimeout(() => {
         broadcastButton.textContent = `Save Onchain the New Public Key`;
-        broadcastButton.disabled = false;
+        if (useHiveKeychain.checked) {
+            broadcastButton.disabled = false;
+            broadcastButton.style.backgroundColor = "red";
+        }
     }, 5000);
 
     const metadata = await checkPubKeyOnchain(
