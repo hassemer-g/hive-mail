@@ -14,7 +14,6 @@ import {
     customBase91CharSet,
 } from "./charsets.js";
 import {
-    encodeBase91,
     decodeBase91,
 } from "./base91.js";
 import {
@@ -51,7 +50,6 @@ function valPriv(input) {
 }
 
 function valDecryptButton() {
-
     if (
         valAccountNameStructure(addresseeDecInput.value.trim())
         && valCiphertext(ciphertextDecInput.value.trim())
@@ -60,11 +58,9 @@ function valDecryptButton() {
         decryptButton.disabled = false;
         decryptButton.style.backgroundColor = "green";
     } else {
-
         decryptButton.disabled = true;
         decryptButton.style.backgroundColor = "";
         resultMessageDec.textContent = "";
-
     }
 }
 
@@ -87,6 +83,12 @@ privKeyDecInput.addEventListener("input", () => {
 privKeyDecInput.addEventListener("input", valDecryptButton);
 
 decryptButton.addEventListener("click", async () => {
+    const privKey = privKeyDecInput.value.trim();
+
+    privKeyDecInput.value = "";
+    privKeyDecInput.style.borderColor = "";
+    decryptButton.disabled = true;
+    decryptButton.style.backgroundColor = "";
 
     const payloadStr = ciphertextDecInput.value.trim();
 
@@ -97,10 +99,6 @@ decryptButton.addEventListener("click", async () => {
     ) {
         resultMessageDec.textContent = `Invalid ciphertext input!`;
         resultMessageDec.style.color = "red";
-        privKeyDecInput.value = "";
-        privKeyDecInput.style.borderColor = "";
-        decryptButton.disabled = true;
-        decryptButton.style.backgroundColor = "";
         return;
     }
 
@@ -108,10 +106,9 @@ decryptButton.addEventListener("click", async () => {
 
         const [decrypted, inputIsFile] = await decryptMsg(
             addresseeDecInput.value.trim(),
-            decodeBase91(privKeyDecInput.value.trim().slice(1, -1)),
+            decodeBase91(privKey).slice(1, -1),
             decodeBase91(payloadStr.slice(1, -1)),
             Hs,
-
         );
 
         let decryptedStr;
@@ -121,36 +118,22 @@ decryptButton.addEventListener("click", async () => {
             decryptedStr
             && typeof decryptedStr === "string"
         ) {
-
             resultMessageDec.textContent = `Message successfully decrypted!`;
             resultMessageDec.style.color = "green";
             copyButtonDec.disabled = false;
             copyButtonDec.style.backgroundColor = "darkorange";
             DECRYPTED_MSG = decryptedStr;
-            privKeyDecInput.value = "";
-            privKeyDecInput.style.borderColor = "";
-            decryptButton.disabled = true;
-            decryptButton.style.backgroundColor = "";
 
         } else {
-
             DECRYPTED_MSG = null;
             resultMessageDec.textContent = `Failed to decrypt message!`;
             resultMessageDec.style.color = "red";
-            privKeyDecInput.value = "";
-            privKeyDecInput.style.borderColor = "";
-            decryptButton.disabled = true;
-            decryptButton.style.backgroundColor = "";
         }
 
     } catch (err) {
         DECRYPTED_MSG = null;
         resultMessageDec.textContent = `Failed to decrypt message!`;
         resultMessageDec.style.color = "red";
-        privKeyDecInput.value = "";
-        privKeyDecInput.style.borderColor = "";
-        decryptButton.disabled = true;
-        decryptButton.style.backgroundColor = "";
     }
 });
 
