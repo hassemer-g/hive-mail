@@ -36,11 +36,9 @@ export async function decryptMsg(
         const HM_version = prefixStr.slice(0, 3);
         const HM_mode = prefixStr.slice(3, 7);
 
-        let doNotUsePq = false, inputIsFile = false;
+        let doNotUsePq = false;
         if (HM_mode === "0000") { }
         else if (HM_mode === "0001") { doNotUsePq = true; }
-        else if (HM_mode === "0002") { inputIsFile = true; }
-        else if (HM_mode === "0003") { doNotUsePq = true; inputIsFile = true; }
         else {
             console.error(`Payload is corrupted!`);
             return null;
@@ -130,7 +128,6 @@ export async function decryptMsg(
         ) {
             return [
                 finalDecrypted,
-                inputIsFile,
             ];
         }
 
