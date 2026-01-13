@@ -26,14 +26,11 @@ export async function encryptMsg(
     recipientPubHMkey,
     Hs,
     doNotUsePq = false,
-    inputIsFile = false,
 ) {
     const HM_version = "000";
     let HM_mode;
-    if (!doNotUsePq & !inputIsFile) { HM_mode = "0000" }
-    else if (doNotUsePq & !inputIsFile) { HM_mode = "0001" }
-    else if (!doNotUsePq & inputIsFile) { HM_mode = "0002" }
-    else if (doNotUsePq & inputIsFile) { HM_mode = "0003" }
+    if (!doNotUsePq) { HM_mode = "0000" }
+    else if (doNotUsePq) { HM_mode = "0001" }
 
     const recipientPubX25519Key = recipientPubHMkey.subarray(0, 32);
     const recipientPubKyberKey = recipientPubHMkey.subarray(32, 1600);
