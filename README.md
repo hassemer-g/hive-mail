@@ -1,6 +1,6 @@
 # Hive-Mail
 
-Publication date (v.1): 10/01/2026
+Publication date (v. 1.0): 10/01/2026
 <br>
 
 Articles about Hive-Mail (in reverse chronological order):<br>
