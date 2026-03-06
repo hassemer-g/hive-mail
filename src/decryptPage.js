@@ -1,144 +1,244 @@
 import {
-    createSHA512,
-    createSHA3,
-    createWhirlpool,
-    createBLAKE2b,
-} from "./hash-wasm/hash-wasm.mjs";
+    VARS,
+
+} from "./state.js";
+import {
+
+    getHs,
+} from "./hasher.js";
+import {
+    processFileUpload,
+    saveToFile,
+} from "./file.js";
 import {
     bytesToUtf8,
+    stripOuterQuotes,
 } from "./utils.js";
 import {
     valStringCharSet,
 } from "./val.js";
 import {
-    customBase91CharSet,
+    base87CharSet,
 } from "./charsets.js";
 import {
-    decodeBase91,
-} from "./base91.js";
+    decBase87,
+} from "./base87.js";
 import {
-    valAccountNameStructure,
+    valAccName,
 } from "./val-h.js";
 import {
     decryptMsg,
 } from "./hm-decrypt.js";
 
-const Hs = [
-    await createSHA3(),
-    await createBLAKE2b(),
-    await createSHA512(),
-    await createWhirlpool(),
-];
+await getHs();
 
-const addresseeDecInput = document.getElementById("addresseeDec");
-const ciphertextDecInput = document.getElementById("ciphertextDec");
-const privKeyDecInput = document.getElementById("privKeyDec");
+const addresseeInput = document.getElementById("addresseeDec");
+const inputCont = document.getElementById("inputContDec");
+const ciphertextInput = document.getElementById("ciphertextDec");
+const fileInput = document.getElementById("fileInputDec");
+const privKeyInput = document.getElementById("privKeyDec");
 const decryptButton = document.getElementById("decryptButton");
-const resultMessageDec = document.getElementById("resultMessageDec");
-const copyButtonDec = document.getElementById("copyButtonDec");
+const resultMessage = document.getElementById("resultMessageDec");
+const copyButtonContainer = document.getElementById("copyButtonContainerDec");
+const copyButton = document.getElementById("copyButtonDec");
+const downloadButtonContainer = document.getElementById("downloadButtonContainerDec");
+const downloadButton = document.getElementById("downloadButtonDec");
 
-let DECRYPTED_MSG = null;
+function clearOuts() {
+    VARS[1] = null;
+    copyButtonContainer.classList.remove("visible");
+    copyButton.disabled = true;
+    copyButton.style.backgroundColor = "";
+    downloadButtonContainer.classList.remove("visible");
+    downloadButton.disabled = true;
+    downloadButton.style.backgroundColor = "";
+}
+
+fileInput.addEventListener("change", async e => {
+    const file = e.target.files[0];
+    let fileBytes;
+    if (file) { fileBytes = await processFileUpload(file); }
+    if (fileBytes) {
+        ciphertextInput.value = "";
+        ciphertextInput.style.borderColor = "";
+        fileInput.value = "";
+        VARS[0] = fileBytes;
+        valDecryptButton();
+        resultMessage.style.color = "lightblue";
+        resultMessage.textContent = `File loaded successfully: ${file.name} (${VARS[0].length.toLocaleString()} bytes)`;
+    } else {
+        VARS[0] = null;
+        fileInput.value = "";
+        clearOuts();
+        valDecryptButton();
+        resultMessage.style.color = "red";
+        resultMessage.textContent = "Error reading file!";
+    }
+});
 
 function valCiphertext(input) {
-    if (typeof input !== "string") return false;
-    return input.startsWith(`"`) && input.endsWith(`"`) && input.length > 66;
+    return typeof input === "string"
+
+        && input.length > 65
+        && valStringCharSet(stripOuterQuotes(input), base87CharSet);
 }
 
 function valPriv(input) {
-    if (typeof input !== "string") return false;
-    return input.startsWith(`"`) && input.endsWith(`"`) && input.length > 12900;
+    return typeof input === "string"
+
+        && input.length > 13000
+        && valStringCharSet(input, base87CharSet);
 }
 
 function valDecryptButton() {
     if (
-        valAccountNameStructure(addresseeDecInput.value.trim())
-        && valCiphertext(ciphertextDecInput.value.trim())
-        && valPriv(privKeyDecInput.value.trim())
+        valAccName(addresseeInput.value.trim())
+        && valPriv(privKeyInput.value.trim())
+        && VARS?.length
+        && (
+            valCiphertext(ciphertextInput.value.trim())
+            || (
+                VARS[0] instanceof Uint8Array
+                && VARS[0].length
+            )
+        )
     ) {
         decryptButton.disabled = false;
         decryptButton.style.backgroundColor = "green";
     } else {
+
         decryptButton.disabled = true;
         decryptButton.style.backgroundColor = "";
-        resultMessageDec.textContent = "";
+        resultMessage.textContent = "";
+
     }
 }
 
-addresseeDecInput.addEventListener("input", () => {
-    const t = addresseeDecInput.value.trim();
-    addresseeDecInput.style.borderColor = !t ? "" : valAccountNameStructure(t) ? "green" : "red";
+addresseeInput.addEventListener("input", () => {
+    const t = addresseeInput.value.trim();
+    addresseeInput.style.borderColor = !t ? "" : valAccName(t) ? "green" : "red";
 });
-addresseeDecInput.addEventListener("input", valDecryptButton);
+addresseeInput.addEventListener("input", valDecryptButton);
 
-ciphertextDecInput.addEventListener("input", () => {
-    const c = ciphertextDecInput.value.trim();
-    ciphertextDecInput.style.borderColor = !c ? "" : valCiphertext(c) ? "green" : "red";
+ciphertextInput.addEventListener("input", () => {
+    const c = ciphertextInput.value.trim();
+    const test = valCiphertext(c);
+    ciphertextInput.style.borderColor = !c ? "" : test ? "green" : "red";
+    if (test) {
+        VARS[0] = null;
+    }
 });
-ciphertextDecInput.addEventListener("input", valDecryptButton);
+ciphertextInput.addEventListener("input", valDecryptButton);
 
-privKeyDecInput.addEventListener("input", () => {
-    const k = privKeyDecInput.value.trim();
-    privKeyDecInput.style.borderColor = !k ? "" : valPriv(k) ? "green" : "red";
+privKeyInput.addEventListener("input", () => {
+    const k = privKeyInput.value.trim();
+    privKeyInput.style.borderColor = !k ? "" : valPriv(k) ? "green" : "red";
 });
-privKeyDecInput.addEventListener("input", valDecryptButton);
+privKeyInput.addEventListener("input", valDecryptButton);
 
 decryptButton.addEventListener("click", async () => {
-    const privKey = privKeyDecInput.value.trim();
-
-    privKeyDecInput.value = "";
-    privKeyDecInput.style.borderColor = "";
+    const privKey = decBase87(privKeyInput.value.trim());
+    privKeyInput.value = "";
+    privKeyInput.style.borderColor = "";
     decryptButton.disabled = true;
     decryptButton.style.backgroundColor = "";
 
-    const payloadStr = ciphertextDecInput.value.trim();
-
+    const payloadStr = ciphertextInput.value.trim();
+    let payload;
     if (
-        !payloadStr.startsWith(`"`)
-        || !payloadStr.endsWith(`"`)
-        || !valStringCharSet(payloadStr.slice(1, -1), customBase91CharSet)
+        valCiphertext(payloadStr)
     ) {
-        resultMessageDec.textContent = `Invalid ciphertext input!`;
-        resultMessageDec.style.color = "red";
+        payload = decBase87(stripOuterQuotes(payloadStr));
+    } else if (
+        VARS[0] instanceof Uint8Array
+        && VARS[0].length
+    ) {
+        payload = VARS[0];
+    } else {
+        clearOuts();
+        resultMessage.style.color = "red";
+        resultMessage.textContent = `Invalid payload!`;
         return;
     }
 
-    try {
-        const [decrypted] = await decryptMsg(
-            addresseeDecInput.value.trim(),
-            decodeBase91(privKey.slice(1, -1)),
-            decodeBase91(payloadStr.slice(1, -1)),
-            Hs,
-        );
+    const [decrypted, inputIsFile] = await decryptMsg(
+        addresseeInput.value.trim(),
+        privKey,
+        payload,
 
+    );
+
+    if (
+        !(decrypted instanceof Uint8Array)
+        || !decrypted.length
+        || typeof inputIsFile !== "boolean"
+    ) {
+        clearOuts();
+        resultMessage.style.color = "red";
+        resultMessage.textContent = `Decryption failed!`;
+        return;
+    }
+
+    if (inputIsFile) {
+        copyButtonContainer.classList.remove("visible");
+        copyButton.disabled = true;
+        copyButton.style.backgroundColor = "";
+        resultMessage.style.color = "green";
+        resultMessage.textContent = `File successfully decrypted!`;
+        downloadButtonContainer.classList.add("visible");
+        downloadButton.disabled = false;
+        downloadButton.style.backgroundColor = "darkorange";
+        VARS[1] = decrypted;
+
+    } else {
+        downloadButtonContainer.classList.remove("visible");
+        downloadButton.disabled = true;
+        downloadButton.style.backgroundColor = "";
         const decryptedStr = bytesToUtf8(decrypted);
 
         if (
-            decryptedStr
-            && typeof decryptedStr === "string"
+            typeof decryptedStr === "string"
+            && decryptedStr.trim()
         ) {
-            resultMessageDec.textContent = `Message successfully decrypted!`;
-            resultMessageDec.style.color = "green";
-            copyButtonDec.disabled = false;
-            copyButtonDec.style.backgroundColor = "darkorange";
-            DECRYPTED_MSG = decryptedStr;
+            resultMessage.style.color = "green";
+            resultMessage.textContent = `Message successfully decrypted!`;
+            copyButtonContainer.classList.add("visible");
+            copyButton.disabled = false;
+            copyButton.style.backgroundColor = "darkorange";
+            VARS[1] = decryptedStr;
 
         } else {
-            DECRYPTED_MSG = null;
-            resultMessageDec.textContent = `Failed to decrypt message!`;
-            resultMessageDec.style.color = "red";
+            clearOuts();
+            resultMessage.style.color = "red";
+            resultMessage.textContent = `Failed to decrypt message.`;
         }
-
-    } catch (err) {
-        DECRYPTED_MSG = null;
-        resultMessageDec.textContent = `Failed to decrypt message!`;
-        resultMessageDec.style.color = "red";
     }
 });
 
-copyButtonDec.addEventListener("click", () => {
-    navigator.clipboard.writeText(DECRYPTED_MSG)
+copyButton.addEventListener("click", () => {
+    navigator.clipboard.writeText(VARS[1])
     .then(() => {
-        copyButtonDec.textContent = "Copied!";
-        setTimeout(() => copyButtonDec.textContent = "Copy the Decrypted Message", 5000);
+        copyButton.textContent = "Copied!";
+        setTimeout(() => copyButton.textContent = "Copy the Decrypted Message", 5000);
     });
+});
+
+downloadButton.addEventListener("click", async () => {
+    try {
+
+        await saveToFile(VARS[1], "retrieved_file");
+
+    } catch (err) {
+        console.error(`
+    Error in save flow!
+${err && err.message ? err.message : err}
+`);
+
+        alert("Failed to save the retrieved file: " + (err && err.message ? err.message : err));
+    }
+
+    downloadButton.textContent = "Downloaded!";
+    setTimeout(() => {
+        downloadButton.textContent = `Download the Retrieved File`;
+    }, 5000);
 });

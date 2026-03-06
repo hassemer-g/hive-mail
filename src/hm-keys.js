@@ -3,7 +3,7 @@ import {
 } from "./utils.js";
 import {
     createX25519KeyPair,
-} from "./x25519.js";
+} from "./curves.js";
 import {
     createPQkeyPair,
 } from "./pq.js";
@@ -21,13 +21,8 @@ export function valHMpubKey(
 }
 
 export async function createHMkeyPair() {
-
-    const { privKey: privX25519Key, pubKey: pubX25519Key } = createX25519KeyPair();
-    const { privKey: privKyberKey, pubKey: pubKyberKey } = await createPQkeyPair("ml-kem-1024");
-    const { privKey: privHQCkey, pubKey: pubHQCkey } = await createPQkeyPair("hqc-256");
-
-    const privKey = concatUint8Arr(privX25519Key, privKyberKey, privHQCkey);
-    const pubKey = concatUint8Arr(pubX25519Key, pubKyberKey, pubHQCkey);
-
-    return { privKey, pubKey };
+    const [privX25519Key, pubX25519Key] = createX25519KeyPair();
+    const [privKyberKey, pubKyberKey] = await createPQkeyPair("ml-kem-1024");
+    const [privHQCkey, pubHQCkey] = await createPQkeyPair("hqc-256");
+    return [concatUint8Arr(privX25519Key, privKyberKey, privHQCkey), concatUint8Arr(pubX25519Key, pubKyberKey, pubHQCkey)];
 }

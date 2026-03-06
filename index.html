@@ -20,15 +20,15 @@
                 <br>
 
                 <button data-menu="genKeyPage" class="orange">Create or Change Hive-Mail Key</button>
-                <button data-menu="encryptPage">Encrypt Message</button>
-                <button data-menu="decryptPage">Decrypt Message</button>
+                <button data-menu="encryptPage">Encrypt Message or File</button>
+                <button data-menu="decryptPage">Decrypt Message or File</button>
                 <button data-menu="removePage" class="red">Remove Hive-Mail Key from your account</button>
 
                 <p class="footer">Made with ❤️ by <a href="https://peakd.com/@hassemer" target="_blank">@hassemer</a></p>
 
                 <br><br>
 
-                <p class="disclaimer">Publication date of the latest version (v. 1.0): 10/01/2026</p>
+                <p class="disclaimer">Publication date of the current version (v. 2.0): 06/03-2026</p>
 
                 <p class="disclaimer"><b>Disclaimer:</b> This tool is provided "as-is", absolutely without guarantees. <span class="highlight">Use it at your own risk.</span> Please be careful 🙏🏻</p>
             </div>
@@ -83,52 +83,71 @@
             </div>
 
             <div id="encryptPage-content" class="submenu">
-                <h1>Encrypt Message</h1>
+                <h1>Encrypt Message or File</h1>
 
                 <label for="addresseeEnc">Addressee Hive Account:</label>
                 <input type="text" id="addresseeEnc" placeholder="E.g., other-account">
 
                 <br><br>
 
-                <label for="plaintextEnc">Plaintext to Encrypt:</label>
-                <input type="text" id="plaintextEnc" placeholder="Paste here the message to encrypt...">
+                <div id="inputContEnc" class="hidden visible">
+                    <label for="plaintextEnc">Plaintext to Encrypt:</label>
+                    <input type="text" id="plaintextEnc" placeholder="Paste here the message to encrypt...">
+                    <br>
+                    <input type="file" id="fileInputEnc" accept="*/*" />
+                </div>
 
                 <div class="checkbox-container">
-                    <input type="checkbox" id="usePQ">
-                    <label for="usePQ">Use post-quantum cryptography</label>
+                    <input type="checkbox" id="useKyber" checked>
+                    <label for="useKyber">Also use ML-KEM-1024</label>
+                    <input type="checkbox" id="useHQC">
+                    <label for="useHQC">Also use HQC-256</label>
                     <br><br>
                 </div>
 
-                <button id="encryptButton" disabled>Encrypt Message</button>
+                <button id="encryptButton" disabled>Encrypt</button>
 
                 <p id="resultMessageEnc" style="white-space: pre;"></p>
 
-                <button id="copyButtonEnc" disabled>Copy the Encrypted Message</button>
+                <div id="outButtonsContainerEnc" class="hidden">
+                    <button id="copyButtonEnc" disabled>Copy the Encrypted Output as a String</button>
+                    <button id="downloadButtonEnc" disabled>Download the Encrypted Output as a File</button>
+                </div>
 
                 <button data-action="return-main">Return to Main Menu</button>
             </div>
 
             <div id="decryptPage-content" class="submenu">
-                <h1>Decrypt Message</h1>
+                <h1>Decrypt Message or File</h1>
 
                 <label for="addresseeDec">Your Hive Account:</label>
                 <input type="text" id="addresseeDec" placeholder="E.g., your-account">
 
                 <br><br>
 
-                <label for="ciphertextDec">Encrypted Message to Decrypt:</label>
-                <input type="text" id="ciphertextDec" placeholder="Paste here the encrypted message to decrypt...">
+                <div id="inputContDec" class="hidden visible">
+                    <label for="ciphertextDec">Encrypted Payload for Decryption:</label>
+                    <input type="text" id="ciphertextDec" placeholder="Paste here the encrypted payload as a string...">
+                    <br>
+                    <input type="file" id="fileInputDec" accept="*/*" />
+                </div>
 
                 <br><br>
 
                 <label for="privKeyDec">Your Hive-Mail Private Key:</label>
                 <input type="password" id="privKeyDec" placeholder="Paste here your Hive-Mail private key...">
 
-                <button id="decryptButton" disabled>Decrypt Message</button>
+                <button id="decryptButton" disabled>Decrypt</button>
 
                 <p id="resultMessageDec" style="white-space: pre;"></p>
 
-                <button id="copyButtonDec" disabled>Copy the Decrypted Message</button>
+                <div id="copyButtonContainerDec" class="hidden">
+                    <button id="copyButtonDec" disabled>Copy the Decrypted Message</button>
+                </div>
+
+                <div id="downloadButtonContainerDec" class="hidden">
+                    <button id="downloadButtonDec" disabled>Download the Retrieved File</button>
+                </div>
 
                 <button data-action="return-main">Return to Main Menu</button>
             </div>
@@ -174,3 +193,7 @@
     </body>
 
 </html>
+
+
+
+

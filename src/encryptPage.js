@@ -1,24 +1,28 @@
 import {
-    createSHA512,
-    createSHA3,
-    createWhirlpool,
-    createBLAKE2b,
-} from "./hash-wasm/hash-wasm.mjs";
+    VARS,
+
+} from "./state.js";
+import {
+
+    getHs,
+} from "./hasher.js";
+import {
+    processFileUpload,
+    saveToFile,
+} from "./file.js";
 import {
     utf8ToBytes,
 } from "./utils.js";
 import {
-    encodeBase91,
-    decodeBase91,
-} from "./base91.js";
+    encBase87,
+} from "./base87.js";
+
 import {
-    customBase91CharSet,
-} from "./charsets.js";
-import { valStringCharSet } from "./val.js";
-import { RPCsArray } from "./rpcs.js";
-import { testRPCsWithDhive } from "./test_rpcs.js";
+    NODES,
+    getRespNodes,
+} from "./rpcs.js";
 import {
-    valAccountNameStructure,
+    valAccName,
 } from "./val-h.js";
 import {
     fetchPubKey,
@@ -27,70 +31,125 @@ import {
     encryptMsg,
 } from "./hm-encrypt.js";
 
-const testedRPCs = await testRPCsWithDhive(RPCsArray);
+await getRespNodes();
+await getHs();
 
 const resultMessage = document.getElementById("resultMessageEnc");
 
-if (!testedRPCs || !testedRPCs.length) {
-    resultMessage.textContent = `All Hive RPCs are unresponsive! Try again later...`;
+if (!NODES?.length) {
+    resultMessage.textContent = `Hive RPCs unresponsive! Try again later...`;
     resultMessage.style.color = "red";
 }
 
-const Hs = [
-    await createSHA3(),
-    await createBLAKE2b(),
-    await createSHA512(),
-    await createWhirlpool(),
-
-];
-
 const addresseeInput = document.getElementById("addresseeEnc");
-const plaintextInput = document.getElementById("plaintextEnc");
-const usePQ = document.getElementById("usePQ");
-const encryptButton = document.getElementById("encryptButton");
-const copyButtonEnc = document.getElementById("copyButtonEnc");
 
-let ENCRYPTED_MSG = null;
+const inputCont = document.getElementById("inputContEnc");
+const plaintextInput = document.getElementById("plaintextEnc");
+const fileInput = document.getElementById("fileInputEnc");
+const useKyber = document.getElementById("useKyber");
+const useHQC = document.getElementById("useHQC");
+const encryptButton = document.getElementById("encryptButton");
+const outButtonsContainer = document.getElementById("outButtonsContainerEnc");
+
+const copyButton = document.getElementById("copyButtonEnc");
+const downloadButton = document.getElementById("downloadButtonEnc");
+
+fileInput.addEventListener("change", async e => {
+    const file = e.target.files[0];
+    let fileBytes;
+    if (file) { fileBytes = await processFileUpload(file); }
+    if (fileBytes) {
+        plaintextInput.value = "";
+        plaintextInput.style.borderColor = "";
+        fileInput.value = "";
+        VARS[0] = fileBytes;
+        valEncryptButton();
+        resultMessage.style.color = "lightblue";
+        resultMessage.textContent = `File loaded successfully: ${file.name} (${VARS[0].length.toLocaleString()} bytes)`;
+    } else {
+        VARS[0] = null;
+        fileInput.value = "";
+        outButtonsContainer.classList.remove("visible");
+
+        copyButton.disabled = true;
+        copyButton.style.backgroundColor = "";
+        downloadButton.disabled = true;
+        downloadButton.style.backgroundColor = "";
+        valEncryptButton();
+        resultMessage.style.color = "red";
+        resultMessage.textContent = "Error reading file!";
+    }
+});
 
 function valEncryptButton() {
-
     const p = plaintextInput.value.trim();
-
     if (
-        valAccountNameStructure(addresseeInput.value.trim())
-        && typeof p === "string"
-        && p.length
-        && testedRPCs.length
+        valAccName(addresseeInput.value.trim())
+        && NODES?.length
+        && VARS?.length
+        && (
+            (
+                typeof p === "string"
+                && p.trim()
+            )
+            || (
+                VARS[0] instanceof Uint8Array
+                && VARS[0].length
+            )
+        )
     ) {
         encryptButton.disabled = false;
         encryptButton.style.backgroundColor = "green";
     } else {
         encryptButton.disabled = true;
         encryptButton.style.backgroundColor = "";
-        copyButtonEnc.disabled = true;
-        copyButtonEnc.style.backgroundColor = "";
-        resultMessage.textContent = "";
-        ENCRYPTED_MSG = null;
+        outButtonsContainer.classList.remove("visible");
+
+        copyButton.disabled = true;
+        copyButton.style.backgroundColor = "";
+        downloadButton.disabled = true;
+        downloadButton.style.backgroundColor = "";
+        VARS[1] = null;
+        if (NODES?.length) { resultMessage.textContent = ""; }
     }
 }
 
 addresseeInput.addEventListener("input", () => {
     const t = addresseeInput.value.trim();
-    addresseeInput.style.borderColor = !t ? "" : valAccountNameStructure(t) ? "green" : "red";
+    addresseeInput.style.borderColor = !t ? "" : valAccName(t) ? "green" : "red";
 });
 addresseeInput.addEventListener("input", valEncryptButton);
 
 plaintextInput.addEventListener("input", () => {
     const p = plaintextInput.value.trim();
-    plaintextInput.style.borderColor = !p ? "" : (typeof p === "string" && p.length) ? "green" : "red";
+    const test = typeof p === "string" && p.length;
+    plaintextInput.style.borderColor = !p ? "" : test ? "green" : "red";
+    if (test) {
+        VARS[0] = null;
+    }
 });
 plaintextInput.addEventListener("input", valEncryptButton);
 
-usePQ.addEventListener("change", () => {
-        copyButtonEnc.disabled = true;
-        copyButtonEnc.style.backgroundColor = "";
+useKyber.addEventListener("change", () => {
+        outButtonsContainer.classList.remove("visible");
+
+        copyButton.disabled = true;
+        copyButton.style.backgroundColor = "";
+        downloadButton.disabled = true;
+        downloadButton.style.backgroundColor = "";
         resultMessage.textContent = "";
-        ENCRYPTED_MSG = null;
+        VARS[1] = null;
+});
+
+useHQC.addEventListener("change", () => {
+        outButtonsContainer.classList.remove("visible");
+
+        copyButton.disabled = true;
+        copyButton.style.backgroundColor = "";
+        downloadButton.disabled = true;
+        downloadButton.style.backgroundColor = "";
+        resultMessage.textContent = "";
+        VARS[1] = null;
 });
 
 encryptButton.addEventListener("click", async () => {
@@ -99,9 +158,9 @@ encryptButton.addEventListener("click", async () => {
     let recipientPubHMkey;
     try {
 
-        recipientPubHMkey = await fetchPubKey(
+        [recipientPubHMkey] = await fetchPubKey(
             addressee,
-            testedRPCs,
+            NODES,
         );
     } catch (err) {
         resultMessage.textContent = `Failed to get the metadata from account "${addressee}"!`;
@@ -109,47 +168,80 @@ encryptButton.addEventListener("click", async () => {
         return;
     }
 
-    if (recipientPubHMkey && recipientPubHMkey instanceof Uint8Array && recipientPubHMkey.length) {
-
-        const plaintext = plaintextInput.value.trim();
-
-        const toUsePq = usePQ.checked;
-
-        const msgStr = `"` + encodeBase91(await encryptMsg(
-            utf8ToBytes(plaintext),
-            addressee,
-            recipientPubHMkey,
-            Hs,
-            toUsePq ? false : true,
-
-        )) + `"`;
-
-        if (
-            typeof msgStr === "string"
-            && msgStr.trim()
-            && valStringCharSet(msgStr.slice(1, -1), customBase91CharSet)
-        ) {
-
-        resultMessage.textContent = `Message successfully encrypted!`;
-        resultMessage.style.color = "green";
-        copyButtonEnc.disabled = false;
-        copyButtonEnc.style.backgroundColor = "darkorange";
-        ENCRYPTED_MSG = msgStr;
-
-        } else {
-            resultMessage.textContent = `Failed to encrypt message!`;
-            resultMessage.style.color = "red";
-        }
-    } else {
-        resultMessage.textContent = `The account ${addressee} does not have a Hive-Mail public key registered onchain!`;
+    if (
+        !(recipientPubHMkey instanceof Uint8Array)
+        || !recipientPubHMkey.length
+    ) {
+        resultMessage.textContent = `Failed to get the Hive-Mail Public Key from the onchain metada of account "${addressee}"`;
         resultMessage.style.color = "red";
     }
+
+    let plaintext, inputIsFile;
+    if (
+        VARS[0] instanceof Uint8Array
+        && VARS[0].length
+    ) {
+        plaintext = VARS[0];
+        inputIsFile = true;
+
+    } else {
+        plaintext = plaintextInput.value.trim();
+        inputIsFile = false;
+    }
+
+    const encrypted = await encryptMsg(
+        inputIsFile ? plaintext : utf8ToBytes(plaintext),
+        addressee,
+        recipientPubHMkey,
+
+        useKyber.checked,
+        useHQC.checked,
+        inputIsFile,
+    );
+
+    if (
+        !(encrypted instanceof Uint8Array)
+        || !encrypted.length
+    ) {
+        resultMessage.textContent = `Failed to encrypt message!`;
+        resultMessage.style.color = "red";
+    }
+
+    resultMessage.textContent = `Message successfully encrypted!`;
+    resultMessage.style.color = "green";
+    outButtonsContainer.classList.add("visible");
+
+    copyButton.disabled = false;
+    copyButton.style.backgroundColor = "darkorange";
+    downloadButton.disabled = false;
+    downloadButton.style.backgroundColor = "darkorange";
+    VARS[1] = encrypted;
 });
 
-copyButtonEnc.addEventListener("click", () => {
-    navigator.clipboard.writeText(ENCRYPTED_MSG)
+copyButton.addEventListener("click", () => {
+    navigator.clipboard.writeText(`"` + encBase87(VARS[1]) + `"`)
     .then(() => {
-        copyButtonEnc.textContent = "Copied!";
-        setTimeout(() => copyButtonEnc.textContent = "Copy the Encrypted Message", 5000);
+        copyButton.textContent = "Copied!";
+        setTimeout(() => copyButton.textContent = `Copy the Encrypted Output as a String`, 5000);
     });
+});
+
+downloadButton.addEventListener("click", async () => {
+    try {
+
+        await saveToFile(VARS[1], "encrypted");
+
+    } catch (err) {
+        console.error(`
+    Error in save flow!
+${err && err.message ? err.message : err}
+`);
+
+        alert("Failed to save the encrypted output as a file: " + (err && err.message ? err.message : err));
+    }
+
+    downloadButton.textContent = "Downloaded!";
+    setTimeout(() => {
+        downloadButton.textContent = `Download the Encrypted Output as a File`;
+    }, 5000);
 });

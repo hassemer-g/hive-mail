@@ -3,72 +3,70 @@ import {
     wipeUint8Arr,
     utf8ToBytes,
 } from "./utils.js";
+import {
+    Hs,
+    getHs,
+} from "./hasher.js";
 
-function getDerivs(
-    ikm,
-    key,
-    H,
-) {
-    H.update(new Uint8Array([1]));
-    H.update(ikm);
-    H.update(key);
-    const out1 = H.digest("binary");
-    H.init();
-    H.update(new Uint8Array([252]));
-    H.update(out1);
-    H.update(ikm);
-    const out2 = H.digest("binary");
-    H.init();
-    return [out1, out2];
-}
+await getHs();
 
-function customKdf(
-    H,
+function myKdf(
     ikm,
-    outputOutline,
+    outputOutline = [64],
+    H1 = Hs[0],
+    H2 = Hs[1],
 ) {
-    const digestSize = H.digestSize;
+
+    const digestSize = H1.digestSize;
+
     const outLen = outputOutline.length;
     const outputs = new Array(outLen);
 
     const counter = new Uint8Array(4);
-    const counterView = new DataView(counter.buffer);
+
     let C = 0;
 
-    counterView.setUint32(0, C, true);
-    H.update(counter);
-    H.update(ikm);
-    let hashed = H.digest("binary");
-    H.init();
-
-    const [deriv1, deriv2] = getDerivs(
-        ikm,
-        hashed,
-        H,
-    );
-
-    H.update(deriv1);
-    H.update(deriv2);
-    const derivs = H.save();
-    H.init();
+    H1.update(ikm);
+    H1.update(utf8ToBytes(JSON.stringify(outputOutline).slice(1, -1)));
+    const base = H1.save();
 
     for (let i = 0; i < outLen; i++) {
         const blocks = Math.ceil(outputOutline[i] / digestSize);
         const okm = new Uint8Array(blocks * digestSize);
 
         for (let j = 0; j < blocks; j++) {
-            counterView.setUint32(0, ++C, true);
 
-            H.load(derivs);
-            H.update(counter);
-            H.update(hashed);
-            hashed = H.digest("binary");
-            H.init();
+            counter[0] = ++C >>> 24;
+            counter[1] = C >>> 16;
+            counter[2] = C >>> 8;
+            counter[3] = C;
 
-            okm.set(hashed, j * digestSize);
+            H1.load(base);
+            H1.update(counter);
+            const pre1 = H1.digest("binary");
+            H1.init();
+
+            H1.update(Uint8Array.of(1));
+            H1.update(counter);
+            H1.update(pre1);
+            const pre2 = H1.digest("binary");
+            H1.init();
+
+            H2.update(pre2);
+            H2.update(pre1);
+            const pre3 = H2.digest("binary");
+            H2.init();
+
+            H1.update(Uint8Array.of(252));
+            H1.update(pre3);
+            H1.update(counter);
+            const out = H1.digest("binary");
+
+            okm.set(out, j * digestSize);
         }
-        outputs[i] = okm.slice(0, outputOutline[i]);
+        outputs[i] = okm.subarray(0, outputOutline[i]);
     }
+    H1.init();
 
     if (outLen === 1) {
         return outputs[0];
@@ -77,52 +75,89 @@ function customKdf(
     }
 }
 
-function spHashRound(
+function doHash(
     input,
-    Hs,
-    outputLength = 128,
+    outCounter,
+    outSize,
+    H,
 ) {
-    const outLen = Hs.length;
-    const outArr = new Array(outLen);
-    for (let i = 0; i < outLen; i++) {
-        outArr[i] = customKdf(
-            Hs[i],
-            input,
-            [outputLength],
-        );
+    H.update(outCounter);
+    H.update(input);
+    const base = H.save();
+
+    const counter = new Uint8Array(3);
+
+    let C = 0;
+
+    const digestSize = H.digestSize;
+    const blocks = Math.ceil(outSize / digestSize);
+    const output = new Uint8Array(blocks * digestSize);
+
+    for (let i = 0; i < blocks; i++) {
+
+        counter[0] = ++C >>> 16;
+        counter[1] = C >>> 8;
+        counter[2] = C;
+
+        H.load(base);
+        H.update(counter);
+        const out = H.digest("binary");
+
+        output.set(out, i * digestSize);
     }
-    return outArr;
+
+    H.init();
+    return output.subarray(0, outSize);
 }
 
-export function doHashing(
+export function myHash(
     input,
-    Hs,
     outputOutline = [64],
-    rounds = 3,
+    rounds = 10,
+    intermSize = 128,
+    H = Hs[0],
     toWipeInput = false,
 ) {
+
     const counter = new Uint8Array(4);
-    const counterView = new DataView(counter.buffer);
+
     let C = 1;
 
-    counterView.setUint32(0, C, true);
-    let hashMat = concatUint8Arr(...spHashRound(
-        concatUint8Arr(counter, utf8ToBytes(`${input.length} ${rounds} ${JSON.stringify(outputOutline)}`), input),
-        Hs,
-    ));
+    counter[3] = C;
+
+    const initial = concatUint8Arr(
+        input,
+        utf8ToBytes(`${input.length} ${JSON.stringify(outputOutline).slice(1, -1)} ${rounds} ${intermSize}`)
+    );
     if (toWipeInput) { wipeUint8Arr(input); }
 
+    let mat = doHash(
+        initial,
+        counter,
+        intermSize,
+        H,
+    );
+    if (toWipeInput) { wipeUint8Arr(initial); }
+
     while (C < rounds) {
-        counterView.setUint32(0, ++C, true);
-        hashMat = concatUint8Arr(...spHashRound(
-            concatUint8Arr(counter, hashMat),
-            Hs,
-        ));
+
+        counter[0] = ++C >>> 24;
+        counter[1] = C >>> 16;
+        counter[2] = C >>> 8;
+        counter[3] = C;
+
+        mat = doHash(
+            mat,
+            counter,
+            intermSize,
+            H,
+        );
+
     }
 
-    return customKdf(
-        Hs[0],
-        hashMat,
+    return myKdf(
+        mat,
         outputOutline,
+        H,
     );
 }

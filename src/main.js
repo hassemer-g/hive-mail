@@ -1,3 +1,10 @@
+import { resetVars } from "./state.js";
+import { getHs } from "./hasher.js";
+import { getRespNodes } from "./rpcs.js";
+
+await getRespNodes();
+await getHs();
+
 const container = document.getElementById("menu-container");
 const mainMenu = document.getElementById("main-menu");
 
@@ -9,21 +16,23 @@ document.addEventListener("click", async (event) => {
     const action = button.dataset.action;
 
     if (action === "return-main") {
+        resetVars();
         showMenu("main-menu");
         return;
     }
 
     if (menu && menu !== "main-menu") {
         const pageId = `${menu}-content`;
-
+        resetVars();
+        await getRespNodes();
         showMenu(pageId);
         await import(`./${menu}.js`);
-
         resetPage(pageId);
         return;
     }
 
     if (menu === "main-menu") {
+        resetVars();
         showMenu("main-menu");
         return;
     }

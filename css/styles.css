@@ -4,17 +4,17 @@ body {
     padding: 5%;
     box-sizing: border-box;
     line-height: 1.6;
-    max-width: 500px;
+    max-width: 500px; /* Limit width for large screens */
     text-align: center;
-    background-color: #121212;
-    color: #e0e0e0;
+    background-color: #121212; /* Dark background */
+    color: #e0e0e0; /* Light grey text for readability */
 }
 
 h1 {
     font-size: 1.8rem;
     text-align: center;
     margin-bottom: 5%;
-    color: #ffffff;
+    color: #ffffff; /* White for contrast */
 }
 
 h1 a {
@@ -26,10 +26,13 @@ h1 a:hover {
     color: lightgreen;
 }
 
+/* ---- Submenu visibility: default hidden, explicit class to show ---- */
+/* Hide all submenus by default */
 .submenu {
     display: none;
 }
 
+/* When a submenu has .visible it is shown */
 .submenu.visible {
     display: block;
 }
@@ -49,9 +52,9 @@ h1 a:hover {
 .subtitle {
     text-align: center;
     font-size: 1rem;
-    color: #b0b0b0;
+    color: #b0b0b0; /* Light grey for readability */
     margin-bottom: 20px;
-    white-space: normal;
+    white-space: normal;  /* Ensures text wraps automatically */
     display: block;
 }
 .subtitle a {
@@ -80,17 +83,47 @@ input {
     font-size: 1rem;
     padding: 3%;
     margin-top: 2%;
-    border: 1px solid #333;
+    border: 1px solid #333; /* Darker border */
     border-radius: 5px;
     box-sizing: border-box;
-    background-color: #1e1e1e;
-    color: #ffffff;
+    background-color: #1e1e1e; /* Dark input background */
+    color: #ffffff; /* White text */
 }
 
 input:focus {
     outline: none;
     border-color: lightgrey;
     box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
+}
+
+#dropZone {
+    border: 2px dashed #bfa437;                /* muted dark yellow border */
+    border-radius: 12px;
+    padding: 2rem;
+    width: min(90%, 400px);
+    text-align: center;
+
+    background: #2b2400;                       /* deep, dark yellow-brown */
+    color: #f5e6a3;                             /* high-contrast warm text */
+
+    transition: background 0.25s, border-color 0.25s, color 0.25s;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.15); /* subtle glow for contrast */
+}
+
+#dropZone.dragover {
+    border-color: #ffd446;                      /* brighter yellow during drag */
+    background: #3a3100;                        /* slightly lighter but still dark */
+    color: #fff6c7;                              /* brighter text for clarity */
+    box-shadow: 0 0 12px rgba(255, 215, 0, 0.25);
+}
+
+input[type="file"] {
+    margin-top: 1rem;
+}
+
+#fileInfo {
+    margin-top: 1rem;
+    color: #333;
 }
 
 button {
@@ -107,7 +140,7 @@ button {
     margin-left: auto;
     margin-right: auto;
     background-color: green;
-    color: #ffffff;
+    color: #ffffff; /* White text */
 }
 
 button.orange {
@@ -119,10 +152,16 @@ button.red {
 }
 
 button:disabled {
-    background-color: #555;
+    background-color: #555; /* Dark grey for disabled state */
     color: #ccc;
     cursor: not-allowed;
 }
+/*
+button:enabled {
+    background-color: green;
+    color: white;
+}
+*/
 
 .word-wrap {
     white-space: pre-wrap;
@@ -131,39 +170,39 @@ button:disabled {
     word-break: break-word;
     max-width: 100%;
     display: block;
-    padding: 2%;
-    border-radius: 2%;
-    background-color: #1e1e1e;
-    color: #e0e0e0;
+    padding: 2%;  /* Adjust padding based on screen size */
+    border-radius: 2%;  /* Make border radius scale with container size */
+    background-color: #1e1e1e; /* Darker grey for contrast */
+    color: #e0e0e0; /* Light grey text */
 }
 
 .checkbox-container {
     display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: flex-start;
-    width: 100%;
+    flex-direction: row; /* Ensure horizontal alignment */
+    align-items: center; /* Align checkbox and text vertically */
+    justify-content: flex-start; /* Ensure everything stays left-aligned */
+    width: 100%; /* Full width */
     margin-top: 2%;
 }
 
 .checkbox-container input[type="checkbox"] {
     width: auto;
     height: auto;
-    margin: 0;
-    margin-right: 2%;
-    flex-shrink: 0;
+    margin: 0; /* Ensures proper alignment */
+    margin-right: 2%; /* Add spacing between checkbox and text */
+    flex-shrink: 0; /* Prevents checkbox from shrinking */
 }
 
 .checkbox-container label {
     font-size: 0.85rem;
     line-height: 1.2;
     text-align: left;
-    flex-grow: 1;
+    flex-grow: 1; /* Ensures text takes remaining space */
     display: inline-block;
-    white-space: normal;
+    white-space: normal; /* Ensure text wraps if necessary */
     width: 100%;
-    margin: 0;
-    color: #e0e0e0;
+    margin: 0; /* Ensure alignment */
+    color: #e0e0e0; /* Light grey for contrast */
 }
 
 input[type="checkbox"]:checked {
@@ -201,27 +240,28 @@ input[type="checkbox"]:checked {
 }
 
 .textarea-metadata {
-    width: 100%;
-    min-height: 100px;
-    max-height: 500px;
-    resize: vertical;
-    padding: 10px;
-    border: 1px solid #333;
-    border-radius: 5px;
-    font-size: 14px;
-    box-sizing: border-box;
-    transition: border-color 0.3s ease;
-    background-color: #1e1e1e;
-    color: #ffffff;
+    width: 100%; /* Ensures it takes up full available width */
+    min-height: 100px; /* Ensures the textarea has a minimum height */
+    max-height: 500px; /* Prevents the textarea from growing infinitely */
+    resize: vertical; /* Allows the user to manually resize the textarea vertically */
+    padding: 10px; /* Adds padding inside the textarea */
+    border: 1px solid #333; /* Darker border */
+    border-radius: 5px; /* Rounds the corners of the border */
+    font-size: 14px; /* Improves text readability */
+    box-sizing: border-box; /* Ensures padding and border don't affect the width */
+    transition: border-color 0.3s ease; /* Smooth transition when focused */
+    background-color: #1e1e1e; /* Dark input background */
+    color: #ffffff; /* White text */
     font-family: monospace;
 }
 
 .textarea-metadata:focus {
     border-color: lightgrey;
-    outline: none;
+    outline: none; /* Removes the default focus outline */
     box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
 }
 
+/* Add responsive design to limit excessive width on larger screens */
 @media screen and (min-width: 768px) {
     body {
         padding: 2%;
@@ -243,16 +283,20 @@ input[type="checkbox"]:checked {
     }
 }
 
+/* ---- Result containers: use classes instead of inline style ---- */
 .result-container {
-    display: none;
+    display: none;        /* hidden by default */
     margin-top: 1rem;
     text-align: left;
 }
 
+/* When visible we force block. !important is optional but useful
+   if you occasionally see inline style conflicting; only use if needed. */
 .result-container.visible {
-    display: block;
+    display: block; /* or display: flex / grid as required */
 }
 
+/* A small visible helper so you see empty containers during debug (remove later) */
 .result-container.debug-visible {
     outline: 2px dashed rgba(255, 165, 0, 0.4);
 }

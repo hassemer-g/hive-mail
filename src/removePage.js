@@ -1,25 +1,38 @@
-import dhive from "./dhive/dhive.mjs";
 import {
-    shuffleArray,
+    VARS,
+
+} from "./state.js";
+import {
+    stripOuterQuotes,
 } from "./utils.js";
-import { RPCsArray } from "./rpcs.js";
-import { testRPCsWithDhive } from "./test_rpcs.js";
+import { Client } from "./client.js";
 import {
-    valAccountNameStructure,
-    valHivePrivKey,
+    NODES,
+    getRespNodes,
+    callHiveNode,
+} from "./rpcs.js";
+import {
+    buildPrivKeyObj,
+    valPrivKey,
+} from "./key.js";
+import {
+    Transaction,
+} from "./tx.js";
+import {
+    valAccName,
 } from "./val-h.js";
 import {
     checkForRemoval,
     removeHMitems,
 } from "./hm-pubkeys.js";
 
-const testedRPCs = await testRPCsWithDhive(RPCsArray);
+await getRespNodes();
 
 const resultMessage1 = document.getElementById("resultMessage1Rem");
 
-if (!testedRPCs || !testedRPCs.length) {
-    resultMessage1.textContent = `Hive RPCs unresponsive! Try again later...`;
+if (!NODES?.length) {
     resultMessage1.style.color = "red";
+    resultMessage1.textContent = `Hive RPCs unresponsive! Try again later...`;
 }
 
 const accountNameInput = document.getElementById("accountNameRem");
@@ -31,11 +44,24 @@ const privActiveKeyInput = document.getElementById("privActiveKeyRem");
 const removeButton = document.getElementById("removeButton");
 const resultMessage2 = document.getElementById("resultMessage2Rem");
 
-function valCheckButton() {
+function clearAfterSucc() {
+    accountNameInput.value = "";
+    accountNameInput.style.borderColor = "";
+    checkButton.disabled = true;
+    checkButton.style.backgroundColor = "";
+    removeButton.disabled = true;
+    removeButton.style.backgroundColor = "";
+    resultMessage1.textContent = "";
+    useHiveKeychain.checked = false;
+    keychainContainer.classList.remove("visible");
+    privActiveKeyContainer.classList.remove("visible");
+}
 
+function valCheckButton() {
     if (
-        valAccountNameStructure(accountNameInput.value.trim())
-        && testedRPCs.length
+        valAccName(accountNameInput.value.trim())
+        && NODES?.length
+        && VARS?.length
     ) {
         checkButton.disabled = false;
         checkButton.style.backgroundColor = "green";
@@ -46,17 +72,18 @@ function valCheckButton() {
         checkButton.style.backgroundColor = "";
         removeButton.disabled = true;
         removeButton.style.backgroundColor = "";
-        resultMessage1.textContent = "";
         resultMessage2.textContent = "";
         useHiveKeychain.checked = false;
         keychainContainer.classList.remove("visible");
         privActiveKeyContainer.classList.remove("visible");
+        VARS[0] = null;
+        if (NODES?.length) { resultMessage1.textContent = ""; }
     }
 }
 
 accountNameInput.addEventListener("input", () => {
     const t = accountNameInput.value.trim();
-    accountNameInput.style.borderColor = !t ? "" : valAccountNameStructure(t) ? "green" : "red";
+    accountNameInput.style.borderColor = !t ? "" : valAccName(t) ? "green" : "red";
 });
 
 accountNameInput.addEventListener("input", valCheckButton);
@@ -64,16 +91,18 @@ accountNameInput.addEventListener("input", valCheckButton);
 checkButton.addEventListener("click", async () => {
     const t = accountNameInput.value.trim();
 
-    const canBeCleaned = await checkForRemoval(
+    const [canBeCleaned, metadata] = await checkForRemoval(
         t,
-        testedRPCs,
+        NODES,
     );
 
     if (canBeCleaned) {
+        VARS[0] = metadata;
         keychainContainer.classList.add("visible");
         privActiveKeyContainer.classList.add("visible");
         resultMessage1.textContent = `The account ${t} has Hive-Mail elements in its metadata`;
     } else {
+        VARS[0] = null;
         keychainContainer.classList.remove("visible");
         privActiveKeyContainer.classList.remove("visible");
         removeButton.disabled = true;
@@ -98,8 +127,11 @@ useHiveKeychain.addEventListener("change", useKeychainCheckboxFn);
 
 function valRemoveButton() {
     if (
-        valAccountNameStructure(accountNameInput.value.trim())
-        && (valHivePrivKey(privActiveKeyInput.value.trim()) || useHiveKeychain.checked)
+        valAccName(accountNameInput.value.trim())
+        && (useHiveKeychain.checked || valPrivKey(stripOuterQuotes(privActiveKeyInput.value.trim())))
+        && VARS[0]
+        && typeof VARS[0] === "object"
+        && !Array.isArray(VARS[0])
     ) {
         removeButton.disabled = false;
         removeButton.style.backgroundColor = "red";
@@ -115,7 +147,6 @@ privActiveKeyInput.addEventListener("input", valRemoveButton);
 
 removeButton.addEventListener("click", async () => {
     const privKey = privActiveKeyInput.value.trim();
-
     privActiveKeyInput.value = "";
     privActiveKeyInput.style.borderColor = "";
 
@@ -132,87 +163,71 @@ removeButton.addEventListener("click", async () => {
         }
     }, 5000);
 
-    const metadata = await removeHMitems(
+    const ops = await removeHMitems(
         t,
-        testedRPCs,
+        VARS[0],
     );
 
-    if (metadata) {
+    if (
+        !Array.isArray(ops)
+        || !ops.length
+    ) {
 
-        if (
-            typeof metadata !== "object"
-            || Array.isArray(metadata)
-        ) {
-            throw new Error(`Invalid metadata received from the "removeHMitems" function!`);
-        }
-
-        const op = [
-            "account_update2",
-            {
-                account: t,
-                extensions: [],
-                json_metadata: JSON.stringify(metadata),
-                posting_json_metadata: "",
-            },
-        ];
-
-        try {
-
-            if (useHiveKeychain.checked) {
-                if (window.hive_keychain) {
-                    window.hive_keychain.requestBroadcast(t, [op], "Active", function(result) {
-                        if (result.success) {
-                            resultMessage2.textContent = `Success in removing all Hive-Mail elements from the metadata of account ${t}
-Transaction ID: ${result?.result?.id}`;
-                            resultMessage2.style.color = "green";
-                            accountNameInput.value = "";
-                            accountNameInput.style.borderColor = "";
-                            checkButton.disabled = true;
-                            checkButton.style.backgroundColor = "";
-                            removeButton.disabled = true;
-                            removeButton.style.backgroundColor = "";
-                            resultMessage1.textContent = "";
-                            useHiveKeychain.checked = false;
-                            keychainContainer.classList.remove("visible");
-                            privActiveKeyContainer.classList.remove("visible");
-                            
-                        } else {
-                            resultMessage2.textContent = `Failed to remove the Hive-Mail elements from the metadata of account ${t}
-Error message: ${result?.message}`;
-                            resultMessage2.style.color = "red";
-                        }
-                    });
-                    
-                } else {
-                    resultMessage2.textContent = "You need to install Hive Keychain to sign the transaction.";
-                    resultMessage2.style.color = "red";
-                }
-                
-            } else {
-                const result2 = await new dhive.Client(shuffleArray(testedRPCs)).broadcast.sendOperations([op], dhive.PrivateKey.fromString(privKey));
-                resultMessage2.textContent = `Success in removing all Hive-Mail elements from the metadata of account ${t}
-Transaction ID: ${result2?.id}`;
-                resultMessage2.style.color = "green";
-                accountNameInput.value = "";
-                accountNameInput.style.borderColor = "";
-                checkButton.disabled = true;
-                checkButton.style.backgroundColor = "";
-                removeButton.disabled = true;
-                removeButton.style.backgroundColor = "";
-                resultMessage1.textContent = "";
-                useHiveKeychain.checked = false;
-                keychainContainer.classList.remove("visible");
-                privActiveKeyContainer.classList.remove("visible");
-            }
-            
-        } catch (err) {
-            resultMessage2.textContent = `Failed to remove the Hive-Mail elements from the metadata of account ${t}
-Error message: ${err.message}`;
-            resultMessage2.style.color = "red";
-        }
-
-    } else {
-        resultMessage2.textContent = `Failed to save onchain the cleaned metadata!`;
         resultMessage2.style.color = "red";
+        resultMessage2.textContent = `Failed to save onchain the cleaned metadata`;
+    }
+
+    try {
+
+        if (useHiveKeychain.checked) {
+            if (window.hive_keychain) {
+                window.hive_keychain.requestBroadcast(t, ops, "Active", function(result) {
+                    if (result.success) {
+                        resultMessage2.style.color = "green";
+                        resultMessage2.textContent = `Success in removing all Hive-Mail elements from the metadata of account ${t}
+Transaction ID: ${result?.result?.id}`;
+                        clearAfterSucc();
+
+                    } else {
+                        resultMessage2.style.color = "red";
+                        resultMessage2.textContent = `Failed to remove the Hive-Mail elements from the metadata of account ${t}
+Error message: ${result?.message}`;
+                    }
+                });
+
+            } else {
+                resultMessage2.style.color = "red";
+                resultMessage2.textContent = "You need to install Hive Keychain to sign the transaction.";
+            }
+
+        } else {
+
+            const props = await callHiveNode(
+                "get_dynamic_global_properties",
+                undefined,
+                NODES,
+            );
+
+            const tx = new Transaction(props);
+
+            tx.addOperation(ops[0]);
+
+            tx.sign(buildPrivKeyObj(stripOuterQuotes(privKey)));
+
+            const client = new Client(NODES);
+            const res = await client.broadcast(
+                tx,
+            );
+
+            resultMessage2.style.color = "green";
+            resultMessage2.textContent = `Success in removing all Hive-Mail elements from the metadata of account ${t}
+Transaction ID: ${res?.tx_id}`;
+            clearAfterSucc();
+        }
+
+    } catch (err) {
+        resultMessage2.style.color = "red";
+        resultMessage2.textContent = `Failed to remove the Hive-Mail elements from the metadata of account ${t}
+Error message: ${err.message}`;
     }
 });
