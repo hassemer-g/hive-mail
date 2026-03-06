@@ -127,7 +127,7 @@ checkButton.addEventListener("click", async () => {
 
     VARS[0] = null;
     VARS[1] = null;
-    VARS[2] = metadata ?? {};
+    VARS[2] = (!metadata || Array.isArray(metadata)) ? {} : metadata;
     genButton.disabled = false;
     genButton.style.backgroundColor = "green";
 });
