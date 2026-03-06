@@ -51,13 +51,9 @@ export class Client {
             typeof AbortSignal.timeout === "function";
 
         if (hasNativeTimeout) {
-
-            console.log(`client.call: going the browser / modern Node path...`);
             signal = AbortSignal.timeout(timeoutMs);
 
         } else {
-
-            console.log(`client.call: going the older Node path...`);
             const controller = new AbortController();
 
             timeoutId = setTimeout(() => {
