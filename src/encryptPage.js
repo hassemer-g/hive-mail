@@ -1,9 +1,7 @@
 import {
     VARS,
-
 } from "./state.js";
 import {
-
     getHs,
 } from "./hasher.js";
 import {
@@ -16,7 +14,6 @@ import {
 import {
     encBase87,
 } from "./base87.js";
-
 import {
     NODES,
     getRespNodes,
@@ -42,15 +39,12 @@ if (!NODES?.length) {
 }
 
 const addresseeInput = document.getElementById("addresseeEnc");
-
 const inputCont = document.getElementById("inputContEnc");
 const plaintextInput = document.getElementById("plaintextEnc");
 const fileInput = document.getElementById("fileInputEnc");
-const useKyber = document.getElementById("useKyber");
-const useHQC = document.getElementById("useHQC");
+const doNotUseKyber = document.getElementById("doNotUseKyber");
 const encryptButton = document.getElementById("encryptButton");
 const outButtonsContainer = document.getElementById("outButtonsContainerEnc");
-
 const copyButton = document.getElementById("copyButtonEnc");
 const downloadButton = document.getElementById("downloadButtonEnc");
 
@@ -70,7 +64,6 @@ fileInput.addEventListener("change", async e => {
         VARS[0] = null;
         fileInput.value = "";
         outButtonsContainer.classList.remove("visible");
-
         copyButton.disabled = true;
         copyButton.style.backgroundColor = "";
         downloadButton.disabled = true;
@@ -100,11 +93,11 @@ function valEncryptButton() {
     ) {
         encryptButton.disabled = false;
         encryptButton.style.backgroundColor = "green";
+
     } else {
         encryptButton.disabled = true;
         encryptButton.style.backgroundColor = "";
         outButtonsContainer.classList.remove("visible");
-
         copyButton.disabled = true;
         copyButton.style.backgroundColor = "";
         downloadButton.disabled = true;
@@ -130,20 +123,8 @@ plaintextInput.addEventListener("input", () => {
 });
 plaintextInput.addEventListener("input", valEncryptButton);
 
-useKyber.addEventListener("change", () => {
+doNotUseKyber.addEventListener("change", () => {
         outButtonsContainer.classList.remove("visible");
-
-        copyButton.disabled = true;
-        copyButton.style.backgroundColor = "";
-        downloadButton.disabled = true;
-        downloadButton.style.backgroundColor = "";
-        resultMessage.textContent = "";
-        VARS[1] = null;
-});
-
-useHQC.addEventListener("change", () => {
-        outButtonsContainer.classList.remove("visible");
-
         copyButton.disabled = true;
         copyButton.style.backgroundColor = "";
         downloadButton.disabled = true;
@@ -157,11 +138,11 @@ encryptButton.addEventListener("click", async () => {
 
     let recipientPubHMkey;
     try {
-
         [recipientPubHMkey] = await fetchPubKey(
             addressee,
             NODES,
         );
+
     } catch (err) {
         resultMessage.textContent = `Failed to get the metadata from account "${addressee}"!`;
         resultMessage.style.color = "red";
@@ -193,9 +174,7 @@ encryptButton.addEventListener("click", async () => {
         inputIsFile ? plaintext : utf8ToBytes(plaintext),
         addressee,
         recipientPubHMkey,
-
-        useKyber.checked,
-        useHQC.checked,
+        doNotUseKyber.checked ? false : true,
         inputIsFile,
     );
 
@@ -210,7 +189,6 @@ encryptButton.addEventListener("click", async () => {
     resultMessage.textContent = `Message successfully encrypted!`;
     resultMessage.style.color = "green";
     outButtonsContainer.classList.add("visible");
-
     copyButton.disabled = false;
     copyButton.style.backgroundColor = "darkorange";
     downloadButton.disabled = false;
@@ -228,7 +206,6 @@ copyButton.addEventListener("click", () => {
 
 downloadButton.addEventListener("click", async () => {
     try {
-
         await saveToFile(VARS[1], "encrypted");
 
     } catch (err) {

@@ -1,9 +1,7 @@
 import {
     VARS,
-
 } from "./state.js";
 import {
-
     getHs,
 } from "./hasher.js";
 import {
@@ -78,14 +76,12 @@ fileInput.addEventListener("change", async e => {
 
 function valCiphertext(input) {
     return typeof input === "string"
-
         && input.length > 65
         && valStringCharSet(stripOuterQuotes(input), base87CharSet);
 }
 
 function valPriv(input) {
     return typeof input === "string"
-
         && input.length > 13000
         && valStringCharSet(input, base87CharSet);
 }
@@ -105,12 +101,11 @@ function valDecryptButton() {
     ) {
         decryptButton.disabled = false;
         decryptButton.style.backgroundColor = "green";
-    } else {
 
+    } else {
         decryptButton.disabled = true;
         decryptButton.style.backgroundColor = "";
         resultMessage.textContent = "";
-
     }
 }
 
@@ -165,7 +160,6 @@ decryptButton.addEventListener("click", async () => {
         addresseeInput.value.trim(),
         privKey,
         payload,
-
     );
 
     if (
@@ -225,7 +219,6 @@ copyButton.addEventListener("click", () => {
 
 downloadButton.addEventListener("click", async () => {
     try {
-
         await saveToFile(VARS[1], "retrieved_file");
 
     } catch (err) {

@@ -17,7 +17,6 @@ export async function fetchPubKey(
     accName,
     nodes = null,
 ) {
-
     const [accData] = await callHiveNode(
         "get_accounts",
         [accName],
@@ -53,7 +52,6 @@ export async function checkPubKey(
     accName,
     pubHMkey,
     metadata,
-
 ) {
     const stringPubHMkey = encBase87(pubHMkey);
 
@@ -120,7 +118,6 @@ export async function checkForRemoval(
     accName,
     nodes = null,
 ) {
-
     const [accData] = await callHiveNode(
         "get_accounts",
         [accName],
@@ -160,7 +157,6 @@ export async function removeHMitems(
     metadata,
 
 ) {
-
     for (const key of Object.keys(metadata)) {
         if (/^ჰM\d*$/.test(key)) delete metadata[key];
     }
