@@ -82,7 +82,7 @@ function valCiphertext(input) {
 
 function valPriv(input) {
     return typeof input === "string"
-        && input.length > 13000
+        && input.length > 3970
         && valStringCharSet(input, base87CharSet);
 }
 
