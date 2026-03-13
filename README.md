@@ -1,6 +1,6 @@
 # Hive-Mail
 
-Publication date of current version (v. 2.0): 06/03-2026
+Publication date of current version (v. 2.1): 14/03-2026
 <br>
 
 Articles about Hive-Mail (in reverse chronological order):<br>
